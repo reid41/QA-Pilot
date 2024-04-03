@@ -241,7 +241,7 @@ if not st.session_state.get('file_uploaded', False):
     uploaded_file = st.file_uploader("Upload a zip or xz(e.g. sosreport) file of the repository", type=['zip', 'xz'])
     # set the process button after upload
     if uploaded_file is not None and st.button('Process uploaded file'):
-        st.session_state['file_uploaded'] = True  # 标记上传文件已处理
+        st.session_state['file_uploaded'] = True  
         file_extension = uploaded_file.name.split('.')[-1]
         uploaded_repo_name = uploaded_file.name.rsplit('.', 1)[0]
         uploaded_repo_path = os.path.join(project_dir, uploaded_repo_name)
@@ -271,7 +271,7 @@ if not st.session_state.get('file_uploaded', False):
         # it can easy to use the same handle procedure with git url
         pseudo_git_url = f"https://qa_pilot.app/UploadedRepo/{uploaded_repo_name}.git"
         
-        # 更新session_state中的git_repo_url为伪URL
+        # update the git_repo_url to pseudo_git_url
         st.session_state['git_repo_url'] = pseudo_git_url
 
         st.success("File processed successfully!")
