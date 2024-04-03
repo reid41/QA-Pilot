@@ -48,10 +48,10 @@ if user_selection != selected_model:
 # reset the initial state
 if 'init' not in st.session_state:
     st.session_state.update({
-        'init': True,  # 应用初始标记
+        'init': True, 
         'git_repo_url': "",
         'messages': [],
-        'file_uploaded': False,  # 初始化文件上传状态为False
+        'file_uploaded': False,  
     })
 
 
@@ -271,7 +271,7 @@ if not st.session_state.get('file_uploaded', False):
         # it can easy to use the same handle procedure with git url
         pseudo_git_url = f"https://qa_pilot.app/UploadedRepo/{uploaded_repo_name}.git"
         
-        # 更新session_state中的git_repo_url为伪URL
+        # update git_repo_url to the pseude url
         st.session_state['git_repo_url'] = pseudo_git_url
 
         st.success("File processed successfully!")
