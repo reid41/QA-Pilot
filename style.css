@@ -1,0 +1,34 @@
+section[data-testid="stSidebar"] div.stButton button {
+    background-color: whitesmoke;
+    width: auto; /* 减去删除按钮和间隔的宽度 */
+    justify-content: left;
+}
+
+/* 鼠标悬停效果 */
+section[data-testid="stSidebar"] .stButton > button:first-of-type:hover {
+    background-color: white;
+}
+
+/* 如果"❌"按钮有独特的位置（比如总是最后一个按钮），你可以尝试使用 :last-child 伪类 */
+section[data-testid="stSidebar"] .stButton > button:last-child {
+    /* 这里放置特定的样式调整 */
+    background-color: transparent;
+    border: none;
+    box-shadow: none;
+}
+
+/* 修改文本输入框的字体样式 */
+.stTextInput>div>div>input {
+    font-family: 'Garamond', serif; /* 示例字体 */
+    color: #4A90E2; /* 示例颜色 */
+}
+
+/* 尝试修改文件上传器的提示文本字体样式 */
+.stFileUploader>div>div>label {
+    font-family: 'Garamond', serif; /* 示例字体 */
+    color: #4A90E2; /* 示例颜色 */
+}
+
+div[data-testid="stSelectbox"] .css-1tr0i5s-container {
+    font-size: 100px;
+}
