@@ -33,7 +33,7 @@ selected_model = config.get(model_section, 'selected_model')
 
 # update the provider
 provider_list = config.get('model_providers', 'provider_list').split(', ')
-user_selected_provider = st.sidebar.selectbox('Select a provider:', provider_list, index=provider_list.index(selected_provider))
+user_selected_provider = st.sidebar.selectbox('Select a model provider:', provider_list, index=provider_list.index(selected_provider))
 # check openai key exist
 if user_selected_provider == 'openai':
     load_dotenv()
@@ -62,10 +62,10 @@ st.warning("NOTE: Do not use url or upload at the same time!")
 # reset the initial state
 if 'init' not in st.session_state:
     st.session_state.update({
-        'init': True,  # 应用初始标记
+        'init': True,  
         'git_repo_url': "",
         'messages': [],
-        'file_uploaded': False,  # 初始化文件上传状态为False
+        'file_uploaded': False,  
     })
 
 # reset the state when click New Source
