@@ -1,6 +1,6 @@
 ## QA-Pilot
 
-QA-Pilot can chat with github repository or a compressd file(e.g. sosreport) and using the local LLM. 
+QA-Pilot can chat with github repository or a compressd file(e.g. sosreport) and using the online/local LLM. 
 
 ### Features
 
@@ -8,6 +8,8 @@ QA-Pilot can chat with github repository or a compressd file(e.g. sosreport) and
 * Chat with compressed file(directories, e.g. sosreport) with upload way
 * Store the chat history 
 * Select the different LLM models
+    * ollama
+    * openai
 
 ![Image Alt text](/images/qa_pilot.jpg)
 
@@ -35,7 +37,7 @@ pip install -r requirements.txt
 ```
 
 
-4. Setup [ollama website](https://ollama.com/) and [ollama github](https://github.com/ollama/ollama) to manage the local LLM model. 
+4.1. Setup [ollama website](https://ollama.com/) and [ollama github](https://github.com/ollama/ollama) to manage the local LLM model. 
 e.g.
 
 ```shell
@@ -43,6 +45,8 @@ ollama pull <model_name>
 
 ollama list
 ```
+
+4.2. Setup OpenAI, add the key in `.env`
 
 5. Run the QA-Pilot:
 
@@ -58,6 +62,6 @@ streamlit run qa_pilot.py
 
 ### Disclaimer
 
-This is a test project to validate the feasibility of a fully local solution for question answering using LLMs and Vector embeddings. It is not production ready, and it is not meant to be used in production. 
+This is a test project to validate the feasibility of a fully local solution for question answering using LLMs and Vector embeddings. It is not production ready, and it is not meant to be used in production. Vicuna-7B is based on the Llama model so that has the original Llama license.
 
 

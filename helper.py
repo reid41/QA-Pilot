@@ -11,15 +11,16 @@ from urllib.parse import urlparse
 import configparser
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.chat_models import ChatOllama
+from langchain_community.chat_models import ChatOpenAI
 from langchain.chains import ConversationalRetrievalChain
 from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
-
+from dotenv import load_dotenv
 
 # read from the config.ini
 config_path = os.path.join('config', 'config.ini')
 config = configparser.ConfigParser()
 config.read(config_path)
-llm_selected_model = config.get('llm_models', 'selected_model')
+# llm_selected_model = config.get('ollama_llm_models', 'selected_model')
 embedding_selected_model = config.get('embedding_models', 'selected_model')
 vectorstore_dir = config.get('the_project_dirs', 'vectorstore_dir')
 sessions_dir = config.get('the_project_dirs', 'sessions_dir')
@@ -33,14 +34,29 @@ model_kwargs = {"device": "cuda:0"}
 allowed_extensions = ['.py', '.md', '.log']
 
 
-# Update the selected model when modify
-def update_llm_selected_model(selected_model):
-    config = configparser.ConfigParser()
-    config.read(config_path)
-    config.set('llm_models', 'selected_model', selected_model)
+# update the selected provider
+def update_selected_provider(new_provider):
+    config.set('model_providers', 'selected_provider', new_provider)
     with open(config_path, 'w') as configfile:
         config.write(configfile)
 
+
+# update the selected model
+def update_selected_model(new_model):
+    selected_provider = config.get('model_providers', 'selected_provider')
+    model_section = f"{selected_provider}_llm_models"
+    config.set(model_section, 'selected_model', new_model)
+    with open(config_path, 'w') as configfile:
+        config.write(configfile)
+
+
+# get the provider and the model name
+def get_selected_provider_and_model():
+    selected_provider = config.get('model_providers', 'selected_provider')
+    model_section = f"{selected_provider}_llm_models"
+    selected_model = config.get(model_section, 'selected_model')
+    
+    return selected_provider, selected_model
 
 # scan the the repo name file
 def scan_vectorstore_for_repos():
@@ -163,6 +179,24 @@ def remove_directory(dir_path):
         shutil.rmtree(dir_path, ignore_errors=True)
 
 
+current_selected_provider, current_selected_model = get_selected_provider_and_model()
+
+
+# get the chat model from config
+def get_chat_model(provider, model_name):
+    if provider == 'ollama':
+        return ChatOllama(
+            model=model_name,
+            streaming=True,
+            callbacks=[StreamingStdOutCallbackHandler()]
+        )
+    elif provider == 'openai':
+        load_dotenv()
+        return ChatOpenAI(model_name=model_name)
+    else:
+        raise ValueError(f"Unsupported provider: {provider}")
+
+
 class DataHandler:
     def __init__(self, git_url) -> None:
         self.git_url = git_url
@@ -176,12 +210,7 @@ class DataHandler:
         # config the path
         self.db_dir = os.path.join(vectorstore_dir, self.repo_name)
         self.download_path = os.path.join(project_dir, self.repo_name) 
-        self.model = ChatOllama(
-            # model="llama2:13b",
-            model=llm_selected_model,
-            streaming=True,
-            callbacks=[StreamingStdOutCallbackHandler()]
-            )
+        self.model = get_chat_model(current_selected_provider, current_selected_model)
         self.hf = HuggingFaceEmbeddings(
             # model_name=model_name,
             model_name=embedding_selected_model,
@@ -263,7 +292,6 @@ class DataHandler:
     def split_files(self):
         text_splitter = CharacterTextSplitter(chunk_size=int(chunk_size), chunk_overlap=int(chunk_overlap))
         self.texts = text_splitter.split_documents(self.docs)
-        # self.num_texts = len(self.texts)
 
     # save the repo name and path into json
     def save_repo_info_to_json(self):
@@ -326,7 +354,11 @@ class DataHandler:
     # create a chain, send the message into llm and ouput the answer
     def retrieval_qa(self, query):
         chat_history = list(self.ChatQueue.queue)
-        qa = ConversationalRetrievalChain.from_llm(self.model, chain_type="stuff", retriever=self.retriever, condense_question_llm = self.model)
+        qa = ConversationalRetrievalChain.from_llm(
+            self.model, 
+            chain_type="stuff", 
+            retriever=self.retriever, 
+            condense_question_llm = self.model)
         result = qa({"question": query, "chat_history": chat_history})
         self.update_chat_queue((query, result["answer"]))
         return result['answer']
