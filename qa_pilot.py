@@ -10,13 +10,15 @@ from helper import (
     load_repo_urls, 
     remove_directory, 
     remove_repo_from_json,
-    update_llm_selected_model
+    update_selected_provider,
+    update_selected_model,
 )
 import os
 import zipfile
 import lzma
 import tarfile
 import configparser
+from dotenv import load_dotenv
 
 # select the llm model
 # define the config path
@@ -25,8 +27,29 @@ config_path = os.path.join('config', 'config.ini')
 # read the model list from config.ini
 config = configparser.ConfigParser()
 config.read(config_path)
-llm_model_list = config.get('llm_models', 'model_list').split(', ')
-selected_model = config.get('llm_models', 'selected_model')
+selected_provider = config.get('model_providers', 'selected_provider')
+model_section = f"{selected_provider}_llm_models"
+selected_model = config.get(model_section, 'selected_model')
+
+# update the provider
+provider_list = config.get('model_providers', 'provider_list').split(', ')
+user_selected_provider = st.sidebar.selectbox('Select a provider:', provider_list, index=provider_list.index(selected_provider))
+# check openai key exist
+if user_selected_provider == 'openai':
+    load_dotenv()
+    openai_api_key = os.getenv('OPENAI_API_KEY')
+    if not openai_api_key:
+        st.warning("OPENAI_API_KEY is missing in the env variable file. Please add it to use OpenAI services.")
+
+if user_selected_provider != selected_provider:
+    update_selected_provider(user_selected_provider)
+    st.rerun()
+
+# update the model
+model_list = config.get(model_section, 'model_list').split(', ')
+user_selected_model = st.sidebar.selectbox('Select a LLM model:', model_list, index=model_list.index(selected_model))
+if user_selected_model != selected_model:
+    update_selected_model(user_selected_model)
 
 # scan the repos from repo_info.json
 existing_repos = scan_vectorstore_for_repos()
@@ -36,15 +59,6 @@ st.title("QA-Pilot")
 st.info("Analyze the GitHub repository or compressed file(e.g  sosreport) with offline LLM.")
 st.warning("NOTE: Do not use url or upload at the same time!")
 
-# show the menu
-user_selection = st.selectbox('Select a LLM model', llm_model_list, index=llm_model_list.index(selected_model))
-
-
-# update the config.ini if selected
-if user_selection != selected_model:
-    update_llm_selected_model(user_selection)
-    st.rerun()
-
 # reset the initial state
 if 'init' not in st.session_state:
     st.session_state.update({
@@ -53,7 +67,6 @@ if 'init' not in st.session_state:
         'messages': [],
         'file_uploaded': False,  # 初始化文件上传状态为False
     })
-
 
 # reset the state when click New Source
 if st.sidebar.button("New Source Button"):
@@ -95,6 +108,7 @@ def select_repo(repo):
     if 'current_repo' in st.session_state and 'messages' in st.session_state:
         if st.session_state['messages']:  # check the message 
             save_session(st.session_state['messages'], st.session_state['current_repo'])
+
             print("Saved session for", st.session_state['current_repo'])
     
     # load the mapping from the file
@@ -111,6 +125,7 @@ def select_repo(repo):
     
     # load the repo message hsitory
     st.session_state['messages'] = load_session(repo)
+    # st.session_state['messages'] = db_helper.load_session(repo)
     print("Loaded session for", repo)
     print("Exiting select_repo") 
 
@@ -241,7 +256,7 @@ if not st.session_state.get('file_uploaded', False):
     uploaded_file = st.file_uploader("Upload a zip or xz(e.g. sosreport) file of the repository", type=['zip', 'xz'])
     # set the process button after upload
     if uploaded_file is not None and st.button('Process uploaded file'):
-        st.session_state['file_uploaded'] = True  
+        st.session_state['file_uploaded'] = True  # 标记上传文件已处理
         file_extension = uploaded_file.name.split('.')[-1]
         uploaded_repo_name = uploaded_file.name.rsplit('.', 1)[0]
         uploaded_repo_path = os.path.join(project_dir, uploaded_repo_name)
@@ -271,7 +286,7 @@ if not st.session_state.get('file_uploaded', False):
         # it can easy to use the same handle procedure with git url
         pseudo_git_url = f"https://qa_pilot.app/UploadedRepo/{uploaded_repo_name}.git"
         
-        # update the git_repo_url to pseudo_git_url
+        # 更新session_state中的git_repo_url为伪URL
         st.session_state['git_repo_url'] = pseudo_git_url
 
         st.success("File processed successfully!")
