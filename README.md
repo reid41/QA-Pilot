@@ -37,7 +37,7 @@ pip install -r requirements.txt
 ```
 
 
-4.1. Setup [ollama website](https://ollama.com/) and [ollama github](https://github.com/ollama/ollama) to manage the local LLM model. 
+4. Setup [ollama website](https://ollama.com/) and [ollama github](https://github.com/ollama/ollama) to manage the local LLM model. 
 e.g.
 
 ```shell
@@ -46,9 +46,9 @@ ollama pull <model_name>
 ollama list
 ```
 
-4.2. Setup OpenAI, add the key in `.env`
+5. Setup OpenAI, add the key in `.env`
 
-5. Run the QA-Pilot:
+6. Run the QA-Pilot:
 
 ```shell
 streamlit run qa_pilot.py
