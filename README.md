@@ -48,7 +48,9 @@ ollama list
 
 5. Setup OpenAI, add the key in `.env`
 
-6. Run the QA-Pilot:
+6. Set the related parameters in `config/config.ini`, e.g. `model provider`, `model`, `variable`
+
+7. Run the QA-Pilot:
 
 ```shell
 streamlit run qa_pilot.py
