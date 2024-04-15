@@ -63,8 +63,7 @@ streamlit run qa_pilot.py
 
 ### Disclaimer
 
-This is a test project to validate the feasibility of a fully local solution for question answering using LLMs and Vector embeddings. It is not production ready, and it is not meant to be used in production. Vicuna-7B is based on the Llama model so that has the original Llama license.
-Do not use online models for analyzing your critical or production data!!
-Do not use online models for analyzing customer data to ensure data privacy and
-security!!
+* This is a test project to validate the feasibility of a fully local solution for question answering using LLMs and Vector embeddings. It is not production ready, and it is not meant to be used in production. Vicuna-7B is based on the Llama model so that has the original Llama license.
+* `Do not use online models for analyzing your critical or production data!!`
+* `Do not use online models for analyzing customer data to ensure data privacy and security!!`
 
