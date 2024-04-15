@@ -1,11 +1,11 @@
 ## QA-Pilot
 
-QA-Pilot can chat with github repository or a compressd file(e.g. sosreport) and using the online/local LLM. 
+QA-Pilot can chat with github repository or a compressd file(e.g. xz, zip) and using the online/local LLM. 
 
 ### Features
 
 * Chat with github public repository with git clone way
-* Chat with compressed file(directories, e.g. sosreport) with upload way
+* Chat with compressed file(directories, e.g. xz, zip) with upload way
 * Store the chat history 
 * Select the different LLM models
     * ollama
