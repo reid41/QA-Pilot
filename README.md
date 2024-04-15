@@ -11,6 +11,12 @@ QA-Pilot can chat with github repository or a compressd file(e.g. sosreport) and
     * ollama
     * openai
 
+### Disclaimer
+
+* This is a test project to validate the feasibility of a fully local solution for question answering using LLMs and Vector embeddings. It is not production ready, and it is not meant to be used in production. 
+* `Do not use online models for analyzing your critical or production data!!`
+* `Do not use online models for analyzing customer data to ensure data privacy and security!!`
+
 ![Image Alt text](/images/qa_pilot.jpg)
 
 To deploy QA-Pilot, you can follow the below steps:
@@ -61,9 +67,4 @@ streamlit run qa_pilot.py
 * The remove button cannot really remove the local chromadb, need to remove it manually when stop it.
 * Switch to `New Source Button` to add a new project
 
-### Disclaimer
-
-* This is a test project to validate the feasibility of a fully local solution for question answering using LLMs and Vector embeddings. It is not production ready, and it is not meant to be used in production. Vicuna-7B is based on the Llama model so that has the original Llama license.
-* `Do not use online models for analyzing your critical or production data!!`
-* `Do not use online models for analyzing customer data to ensure data privacy and security!!`
 
