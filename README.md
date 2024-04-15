@@ -14,8 +14,8 @@ QA-Pilot can chat with github repository or a compressd file(e.g. xz, zip) and u
 ### Disclaimer
 
 * This is a test project to validate the feasibility of a fully local solution for question answering using LLMs and Vector embeddings. It is not production ready, and it is not meant to be used in production. 
-* `Do not use online models for analyzing your critical or production data!!`
-* `Do not use online models for analyzing customer data to ensure data privacy and security!!`
+* `Do not use models for analyzing your critical or production data!!`
+* `Do not use models for analyzing customer data to ensure data privacy and security!!`
 
 ![Image Alt text](/images/qa_pilot.jpg)
 
