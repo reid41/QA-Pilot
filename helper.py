@@ -20,7 +20,6 @@ from dotenv import load_dotenv
 config_path = os.path.join('config', 'config.ini')
 config = configparser.ConfigParser()
 config.read(config_path)
-# llm_selected_model = config.get('ollama_llm_models', 'selected_model')
 embedding_selected_model = config.get('embedding_models', 'selected_model')
 vectorstore_dir = config.get('the_project_dirs', 'vectorstore_dir')
 sessions_dir = config.get('the_project_dirs', 'sessions_dir')
@@ -28,6 +27,7 @@ project_dir = config.get('the_project_dirs', 'project_dir')
 max_dir_depth = config.get('for_loop_dirs_depth', 'max_dir_depth')
 chunk_size = config.get('chunk_setting', 'chunk_size')
 chunk_overlap = config.get('chunk_setting', 'chunk_overlap')
+base_url = config.get('ollama_llm_models', 'base_url')
 
 encode_kwargs = {"normalize_embeddings": False}
 model_kwargs = {"device": "cuda:0"}  
@@ -186,6 +186,7 @@ current_selected_provider, current_selected_model = get_selected_provider_and_mo
 def get_chat_model(provider, model_name):
     if provider == 'ollama':
         return ChatOllama(
+            base_url=base_url,
             model=model_name,
             streaming=True,
             callbacks=[StreamingStdOutCallbackHandler()]
