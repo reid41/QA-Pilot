@@ -27,6 +27,7 @@ config_path = os.path.join('config', 'config.ini')
 # read the model list from config.ini
 config = configparser.ConfigParser()
 config.read(config_path)
+qa_pilot_version = config.get("app_setting", 'version')
 selected_provider = config.get('model_providers', 'selected_provider')
 model_section = f"{selected_provider}_llm_models"
 selected_model = config.get(model_section, 'selected_model')
@@ -56,6 +57,7 @@ existing_repos = scan_vectorstore_for_repos()
 
 # show the title, info, warning
 st.title("QA-Pilot")
+st.text(qa_pilot_version)
 st.info("Analyze the GitHub repository or compressed file(e.g  sosreport) with offline LLM.")
 st.warning("NOTE: Do not use url or upload at the same time!")
 
