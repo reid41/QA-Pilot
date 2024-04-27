@@ -36,14 +36,15 @@ conda activate QA-Pilot
 
 
 3. Install the required dependencies:
-NOTE: you might need to re-install the pytorch with cuda [pytorch](https://pytorch.org/get-started/locally/)
 
 ```shell
 pip install -r requirements.txt
 ```
 
+4. Install the pytorch with cuda [pytorch](https://pytorch.org/get-started/locally/)
 
-4. Setup [ollama website](https://ollama.com/) and [ollama github](https://github.com/ollama/ollama) to manage the local LLM model. 
+
+5. Setup [ollama website](https://ollama.com/) and [ollama github](https://github.com/ollama/ollama) to manage the local LLM model. 
 e.g.
 
 ```shell
@@ -52,11 +53,11 @@ ollama pull <model_name>
 ollama list
 ```
 
-5. Setup OpenAI, add the key in `.env`
+6. Setup OpenAI, add the key in `.env`
 
-6. Set the related parameters in `config/config.ini`, e.g. `model provider`, `model`, `variable`
+7. Set the related parameters in `config/config.ini`, e.g. `model provider`, `model`, `variable`
 
-7. Run the QA-Pilot:
+8. Run the QA-Pilot:
 
 ```shell
 streamlit run qa_pilot.py
