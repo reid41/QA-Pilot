@@ -17,7 +17,7 @@ QA-Pilot can chat with github repository or a compressd file(e.g. xz, zip) and u
 * `Do not use models for analyzing your critical or production data!!`
 * `Do not use models for analyzing customer data to ensure data privacy and security!!`
 
-![Image Alt text](/images/qa_pilot.jpg)
+![Image Alt text](/images/qa_pilot1.jpg)
 
 To deploy QA-Pilot, you can follow the below steps:
 
