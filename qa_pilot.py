@@ -31,6 +31,59 @@ qa_pilot_version = config.get("app_setting", 'version')
 selected_provider = config.get('model_providers', 'selected_provider')
 model_section = f"{selected_provider}_llm_models"
 selected_model = config.get(model_section, 'selected_model')
+edit_settings_flag = False
+
+
+def save_config(config):
+    """save the configs"""
+    try:
+        with open(config_path, 'w') as configfile:
+            config.write(configfile)
+        st.success("Configuration saved successfully!")
+        print("Configuration has been saved to:", config_path)
+    except Exception as e:
+        st.error("Failed to save configuration: " + str(e))
+        print("Error saving configuration:", e)
+
+
+def config_editor():
+    """edit all settings"""
+    with st.form("config_form"):
+        st.subheader("Edit QA-Pilot Settings")
+        inputs = {}
+        # create dynamic input field
+        for section in config.sections():
+            for key in config[section]:
+                val = config.get(section, key)
+                unique_key = f"{section}|{key}"  # use "|" as separator
+                inputs[unique_key] = st.text_input(f"{section} - {key}", value=val)
+
+        col1, col2 = st.columns(2)  # create two columns for save and cancel
+        with col1:
+            submitted = st.form_submit_button("Save Changes")
+        with col2:
+            cancelled = st.form_submit_button("Cancel")
+
+        if submitted:
+            # update config
+            for unique_key, input_val in inputs.items():
+                sec, k = unique_key.split('|')
+                config.set(sec, k, input_val)
+
+            save_config(config)
+            st.session_state.config_editing = False  # update status
+            st.rerun()
+        elif cancelled:
+            st.session_state.config_editing = False  # close the config editor
+            st.rerun()
+
+# add a switch
+if st.sidebar.button("Edit QA-Pilot Settings"):
+    st.session_state.config_editing = True
+    edit_settings_flag = True
+
+if 'config_editing' in st.session_state and st.session_state.config_editing:
+    config_editor()
 
 # update the provider
 provider_list = config.get('model_providers', 'provider_list').split(', ')
@@ -56,10 +109,11 @@ if user_selected_model != selected_model:
 existing_repos = scan_vectorstore_for_repos()
 
 # show the title, info, warning
-st.title("QA-Pilot")
-st.text(qa_pilot_version)
-st.info("Analyze the GitHub repository or compressed file(e.g  sosreport) with offline LLM.")
-st.warning("NOTE: Do not use url or upload at the same time!")
+if not edit_settings_flag: 
+    st.title("QA-Pilot")
+    st.text(qa_pilot_version)
+    st.info("Analyze the GitHub repository or compressed file(e.g  sosreport) with offline LLM.")
+    st.warning("NOTE: Do not use url or upload at the same time!")
 
 # reset the initial state
 if 'init' not in st.session_state:
@@ -254,58 +308,60 @@ def safe_extract_tar(tar_ref, path):
 
 
 # show the upload file input, when file_uploaded is False
-if not st.session_state.get('file_uploaded', False):
-    uploaded_file = st.file_uploader("Upload a zip or xz(e.g. sosreport) file of the repository", type=['zip', 'xz'])
-    # set the process button after upload
-    if uploaded_file is not None and st.button('Process uploaded file'):
-        st.session_state['file_uploaded'] = True  # already uploaded
-        file_extension = uploaded_file.name.split('.')[-1]
-        uploaded_repo_name = uploaded_file.name.rsplit('.', 1)[0]
-        uploaded_repo_path = os.path.join(project_dir, uploaded_repo_name)
+if not edit_settings_flag:
+    if not st.session_state.get('file_uploaded', False):
+        uploaded_file = st.file_uploader("Upload a zip or xz(e.g. sosreport) file of the repository", type=['zip', 'xz'])
+        # set the process button after upload
+        if uploaded_file is not None and st.button('Process uploaded file'):
+            st.session_state['file_uploaded'] = True  
+            file_extension = uploaded_file.name.split('.')[-1]
+            uploaded_repo_name = uploaded_file.name.rsplit('.', 1)[0]
+            uploaded_repo_path = os.path.join(project_dir, uploaded_repo_name)
 
-        if not os.path.exists(project_dir):
-            os.makedirs(project_dir)
+            if not os.path.exists(project_dir):
+                os.makedirs(project_dir)
 
-        if os.path.exists(uploaded_repo_path):
-            remove_directory(uploaded_repo_path)
+            if os.path.exists(uploaded_repo_path):
+                remove_directory(uploaded_repo_path)
 
-        # create the directory to store the project
-        os.makedirs(uploaded_repo_path)
+            # create the directory to store the project
+            os.makedirs(uploaded_repo_path)
 
-        # uncompress the different file type
-        if file_extension == 'zip':
-            with zipfile.ZipFile(uploaded_file, 'r') as zip_ref:
-                zip_ref.extractall(uploaded_repo_path)
-        elif file_extension == 'xz':
-            # .xz file with tarfile
-            with lzma.open(uploaded_file) as f:
-                with tarfile.open(fileobj=f) as tar_ref:
-                    safe_extract_tar(tar_ref, uploaded_repo_path)
-        else:
-            st.error("Unsupported file type.")
+            # uncompress the different file type
+            if file_extension == 'zip':
+                with zipfile.ZipFile(uploaded_file, 'r') as zip_ref:
+                    zip_ref.extractall(uploaded_repo_path)
+            elif file_extension == 'xz':
+                # .xz file with tarfile
+                with lzma.open(uploaded_file) as f:
+                    with tarfile.open(fileobj=f) as tar_ref:
+                        safe_extract_tar(tar_ref, uploaded_repo_path)
+            else:
+                st.error("Unsupported file type.")
 
-        # pseudo URL，use qa_pilot.app for the uploaded file
-        # it can easy to use the same handle procedure with git url
-        pseudo_git_url = f"https://qa_pilot.app/UploadedRepo/{uploaded_repo_name}.git"
-        
-        # update session_state git_repo_url to pseudo URL
-        st.session_state['git_repo_url'] = pseudo_git_url
+            # pseudo URL，use qa_pilot.app for the uploaded file
+            # it can easy to use the same handle procedure with git url
+            pseudo_git_url = f"https://qa_pilot.app/UploadedRepo/{uploaded_repo_name}.git"
+            
+            # 更新session_state中的git_repo_url为伪URL
+            st.session_state['git_repo_url'] = pseudo_git_url
 
-        st.success("File processed successfully!")
-else:
-    st.success("File uploaded successfully!")
+            st.success("File processed successfully!")
+    else:
+        st.success("File uploaded successfully!")
 
 # git url input
-git_repo = st.text_input("Enter the public GitHub repository url[It might show the fake url for uploaded file, please ignore it!]:", value=st.session_state['git_repo_url'], key='git_repo_url')
+if not edit_settings_flag:
+    git_repo = st.text_input("Enter the public GitHub repository url[It might show the fake url for uploaded file, please ignore it!]:", value=st.session_state['git_repo_url'], key='git_repo_url')
 
-# check whether empty url
-if git_repo.strip():
-    # if a url, set the init to be False, need to load the db
-    print("url---> ", st.session_state['git_repo_url'])
-    st.session_state['init'] = False
+    # check whether empty url
+    if git_repo.strip():
+        # if a url, set the init to be False, need to load the db
+        print("url---> ", st.session_state['git_repo_url'])
+        st.session_state['init'] = False
 
-# input the url and select the repo session
-if 'current_repo' in st.session_state or git_repo:
-    data_handler = DataHandler(git_repo or st.session_state['current_repo'])
-    init_or_load_db(data_handler)
-    chat_message_func()
+    # input the url and select the repo session
+    if 'current_repo' in st.session_state or git_repo:
+        data_handler = DataHandler(git_repo or st.session_state['current_repo'])
+        init_or_load_db(data_handler)
+        chat_message_func()
