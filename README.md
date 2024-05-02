@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://github.com/reid41/QA-Pilot/assets/25558653/b0d13be5-0e10-4f41-8529-506b6c84b264" alt="qa-pilot">
+  <img src="https://github.com/reid41/QA-Pilot/assets/25558653/4b45b525-5fac-4a3c-94e9-46364bdb36c3" alt="qa-pilot">
 </p>
 
 QA-Pilot can chat with github repository or a compressd file(e.g. xz, zip) and using the online/local LLM. 
