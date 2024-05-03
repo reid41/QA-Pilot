@@ -18,7 +18,9 @@ import zipfile
 import lzma
 import tarfile
 import configparser
-from dotenv import load_dotenv
+from dotenv import load_dotenv, set_key
+import pathlib
+from langchain_community.chat_models import ChatOpenAI
 
 # select the llm model
 # define the config path
@@ -77,6 +79,35 @@ def config_editor():
             st.session_state.config_editing = False  # close the config editor
             st.rerun()
 
+
+# Function to save API key
+def save_api_key(key):
+    dotenv_path = pathlib.Path('.env')
+    if not dotenv_path.exists():
+        dotenv_path.touch()
+    set_key(dotenv_path, "OPENAI_API_KEY", key)
+    os.environ["OPENAI_API_KEY"] = key  # Update environment variable
+
+
+# Validate the API key's effectiveness
+def validate_api_key(api_key):
+    if not api_key.startswith("sk-"):
+        st.error("API Key must start with 'sk-'. Please enter a valid API Key.")
+        return False
+    openai_selected_model = config.get('openai_llm_models', 'selected_model')
+    try:
+        os.environ["OPENAI_API_KEY"] = api_key
+        load_dotenv()
+        # Attempt to initialize the model to verify the API key
+        test_model = ChatOpenAI(model_name=openai_selected_model)
+        # If the model is successfully created, assume the API key is valid
+        if test_model:
+            return True
+    except Exception as e:
+        st.error(f"Failed to initialize model with provided API Key: {str(e)}")
+        return False
+
+
 # add a switch
 if st.sidebar.button("Edit QA-Pilot Settings"):
     st.session_state.config_editing = True
@@ -92,8 +123,17 @@ user_selected_provider = st.sidebar.selectbox('Select a model provider:', provid
 if user_selected_provider == 'openai':
     load_dotenv()
     openai_api_key = os.getenv('OPENAI_API_KEY')
-    if not openai_api_key:
-        st.warning("OPENAI_API_KEY is missing in the env variable file. Please add it to use OpenAI services.")
+    if not openai_api_key or not openai_api_key.startswith("sk-"):
+        st.warning("OPENAI_API_KEY is missing or invalid.")
+        api_key_input = st.text_input("Enter your OpenAI API Key:")
+        if st.button("Save API Key"):
+            if api_key_input and validate_api_key(api_key_input):
+                save_api_key(api_key_input)
+                st.success("API Key saved successfully. Please reload the page.")
+                time.sleep(1)
+                st.rerun()
+            else:
+                st.error("Please provide a valid API Key.")
 
 if user_selected_provider != selected_provider:
     update_selected_provider(user_selected_provider)
@@ -357,7 +397,7 @@ if not edit_settings_flag:
     # check whether empty url
     if git_repo.strip():
         # if a url, set the init to be False, need to load the db
-        print("url---> ", st.session_state['git_repo_url'])
+        # print("url---> ", st.session_state['git_repo_url'])
         st.session_state['init'] = False
 
     # input the url and select the repo session
