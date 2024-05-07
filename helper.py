@@ -4,23 +4,20 @@ from langchain_community.vectorstores import Chroma
 import git
 import os
 import json
-from langchain_community.chat_models import ChatOllama
 from queue import Queue
 import shutil
 from urllib.parse import urlparse
 import configparser
-from langchain_community.embeddings import HuggingFaceEmbeddings
-from langchain_community.chat_models import ChatOllama
-from langchain_community.chat_models import ChatOpenAI
 from langchain.chains import ConversationalRetrievalChain
-from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
-from dotenv import load_dotenv
+from qa_model_apis import (
+    get_chat_model,
+    get_embedding_model,
+)
 
 # read from the config.ini
 config_path = os.path.join('config', 'config.ini')
 config = configparser.ConfigParser()
 config.read(config_path)
-embedding_selected_model = config.get('embedding_models', 'selected_model')
 vectorstore_dir = config.get('the_project_dirs', 'vectorstore_dir')
 sessions_dir = config.get('the_project_dirs', 'sessions_dir')
 project_dir = config.get('the_project_dirs', 'project_dir')
@@ -28,11 +25,10 @@ max_dir_depth = config.get('for_loop_dirs_depth', 'max_dir_depth')
 chunk_size = config.get('chunk_setting', 'chunk_size')
 chunk_overlap = config.get('chunk_setting', 'chunk_overlap')
 base_url = config.get('ollama_llm_models', 'base_url')
-
 encode_kwargs = {"normalize_embeddings": False}
 model_kwargs = {"device": "cuda:0"}  
 allowed_extensions = ['.py', '.md', '.log']
-
+        
 
 # update the selected provider
 def update_selected_provider(new_provider):
@@ -55,8 +51,16 @@ def get_selected_provider_and_model():
     selected_provider = config.get('model_providers', 'selected_provider')
     model_section = f"{selected_provider}_llm_models"
     selected_model = config.get(model_section, 'selected_model')
-    
     return selected_provider, selected_model
+
+
+# get the provider and the model name
+def get_embedding_selected_provider_and_model():
+    eb_selected_provider = config.get('embedding_model_providers', 'selected_provider')
+    eb_model_section = f"{eb_selected_provider}_embedding_models"
+    eb_selected_model = config.get(eb_model_section, 'selected_model')
+    return eb_selected_provider, eb_selected_model
+
 
 # scan the the repo name file
 def scan_vectorstore_for_repos():
@@ -76,6 +80,7 @@ def scan_vectorstore_for_repos():
     except json.JSONDecodeError as e:
         print(f"Error reading {repo_info_path}: {e}")
         return []
+
 
 # remove the repo name and store path from json
 def remove_repo_from_json(repo_name):
@@ -178,25 +183,9 @@ def remove_directory(dir_path):
         # remove it
         shutil.rmtree(dir_path, ignore_errors=True)
 
-
+# get the llm model and embedding model
 current_selected_provider, current_selected_model = get_selected_provider_and_model()
-
-
-# get the chat model from config
-def get_chat_model(provider, model_name):
-    if provider == 'ollama':
-        return ChatOllama(
-            base_url=base_url,
-            model=model_name,
-            streaming=True,
-            callbacks=[StreamingStdOutCallbackHandler()]
-        )
-    elif provider == 'openai':
-        load_dotenv()
-        return ChatOpenAI(model_name=model_name)
-    else:
-        raise ValueError(f"Unsupported provider: {provider}")
-
+eb_current_selected_provider, eb_current_selected_model = get_embedding_selected_provider_and_model()
 
 class DataHandler:
     def __init__(self, git_url) -> None:
@@ -212,12 +201,7 @@ class DataHandler:
         self.db_dir = os.path.join(vectorstore_dir, self.repo_name)
         self.download_path = os.path.join(project_dir, self.repo_name) 
         self.model = get_chat_model(current_selected_provider, current_selected_model)
-        self.hf = HuggingFaceEmbeddings(
-            # model_name=model_name,
-            model_name=embedding_selected_model,
-            model_kwargs=model_kwargs,
-            encode_kwargs=encode_kwargs
-        )
+        self.embedding_model = get_embedding_model(eb_current_selected_provider, eb_current_selected_model, model_kwargs, encode_kwargs)
         self.ChatQueue =  Queue(maxsize=2)
 
     # check the db dir exist or not
@@ -329,7 +313,7 @@ class DataHandler:
     def store_chroma(self):  
         if not os.path.exists(self.db_dir):
             os.makedirs(self.db_dir)
-        db = Chroma.from_documents(self.texts, self.hf, persist_directory=self.db_dir) 
+        db = Chroma.from_documents(self.texts, self.embedding_model, persist_directory=self.db_dir) 
         db.persist()  
         return db  
         
@@ -342,7 +326,7 @@ class DataHandler:
             self.db = self.store_chroma()
         else:
             # Just load the DB
-            self.db = Chroma(persist_directory=self.db_dir, embedding_function=self.hf)
+            self.db = Chroma(persist_directory=self.db_dir, embedding_function=self.embedding_model)
         
         self.retriever = self.db.as_retriever()
         self.retriever.search_kwargs['k'] = 3

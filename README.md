@@ -70,4 +70,3 @@ streamlit run qa_pilot.py
 * The remove button cannot really remove the local chromadb, need to remove it manually when stop it.
 * Switch to `New Source Button` to add a new project
 
-
