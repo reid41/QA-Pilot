@@ -12,6 +12,7 @@ QA-Pilot can chat with github repository or a compressd file(e.g. xz, zip) and u
 * Select the different LLM models
     * ollama
     * openai
+    * mistralai
 
 ### Disclaimer
 

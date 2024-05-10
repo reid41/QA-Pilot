@@ -20,7 +20,9 @@ import tarfile
 import configparser
 from dotenv import load_dotenv, set_key
 import pathlib
-from langchain_community.chat_models import ChatOpenAI
+# from langchain_community.chat_models import ChatOpenAI
+from langchain_mistralai.chat_models import ChatMistralAI
+from langchain_openai import ChatOpenAI
 
 # select the llm model
 # define the config path
@@ -81,32 +83,62 @@ def config_editor():
 
 
 # Function to save API key
-def save_api_key(key):
+def save_api_key(api_key_name, key):
     dotenv_path = pathlib.Path('.env')
     if not dotenv_path.exists():
         dotenv_path.touch()
-    set_key(dotenv_path, "OPENAI_API_KEY", key)
-    os.environ["OPENAI_API_KEY"] = key  # Update environment variable
-
+    set_key(dotenv_path, api_key_name, key)
+    os.environ[api_key_name] = key  # Update environment variable
+        
+provider_info_map = {
+    "openai": {
+        "key_variable": "OPENAI_API_KEY",
+        "class": ChatOpenAI
+    },
+    "mistralai": {
+        "key_variable": "MISTRAL_API_KEY",
+        "class": ChatMistralAI
+    }
+}
 
 # Validate the API key's effectiveness
-def validate_api_key(api_key):
-    if not api_key.startswith("sk-"):
+def validate_provider_api_key(provider, api_key):
+    if provider == "openai" and (not api_key.startswith("sk-")):
         st.error("API Key must start with 'sk-'. Please enter a valid API Key.")
         return False
-    openai_selected_model = config.get('openai_llm_models', 'selected_model')
+
+    the_selected_model = config.get(provider + '_llm_models', 'selected_model')
+    provider_info = provider_info_map[provider]
+    api_key_var_name = provider_info["key_variable"]
+    pmodel_class = provider_info['class']
     try:
-        os.environ["OPENAI_API_KEY"] = api_key
+        os.environ[api_key_var_name] = api_key
         load_dotenv()
         # Attempt to initialize the model to verify the API key
-        test_model = ChatOpenAI(model_name=openai_selected_model)
+        pmodel_instance = pmodel_class(model_name=the_selected_model)
         # If the model is successfully created, assume the API key is valid
-        if test_model:
+        if pmodel_instance:
             return True
     except Exception as e:
         st.error(f"Failed to initialize model with provided API Key: {str(e)}")
-        return False
+        return False 
 
+# config the key when input
+def handle_api_key(provider, env_key):
+    load_dotenv()
+    api_key = os.getenv(env_key)
+    if not api_key or (provider == 'openai' and not api_key.startswith("sk-")):
+        st.warning(f"{env_key} is missing or invalid.")
+        api_key_input = st.text_input(f"Enter your {provider.title()} API Key:")
+        if st.button("Save API Key"):
+            # if api_key_input and validate_api_key(provider, api_key_input):
+            if api_key_input and validate_provider_api_key(provider, api_key_input):
+                save_api_key(env_key, api_key_input)
+                st.success("API Key saved successfully. Please reload the page.")
+                time.sleep(1)
+                st.rerun()
+            else:
+                st.error("Please provide a valid API Key.")
 
 # add a switch
 if st.sidebar.button("Edit QA-Pilot Settings"):
@@ -119,21 +151,13 @@ if 'config_editing' in st.session_state and st.session_state.config_editing:
 # update the provider
 provider_list = config.get('model_providers', 'provider_list').split(', ')
 user_selected_provider = st.sidebar.selectbox('Select a model provider:', provider_list, index=provider_list.index(selected_provider))
-# check openai key exist
+
+# Handle API keys based on the selected provider
 if user_selected_provider == 'openai':
-    load_dotenv()
-    openai_api_key = os.getenv('OPENAI_API_KEY')
-    if not openai_api_key or not openai_api_key.startswith("sk-"):
-        st.warning("OPENAI_API_KEY is missing or invalid.")
-        api_key_input = st.text_input("Enter your OpenAI API Key:")
-        if st.button("Save API Key"):
-            if api_key_input and validate_api_key(api_key_input):
-                save_api_key(api_key_input)
-                st.success("API Key saved successfully. Please reload the page.")
-                time.sleep(1)
-                st.rerun()
-            else:
-                st.error("Please provide a valid API Key.")
+    handle_api_key('openai', 'OPENAI_API_KEY')
+elif user_selected_provider == 'mistralai':
+    handle_api_key('mistralai', 'MISTRAL_API_KEY')
+
 
 if user_selected_provider != selected_provider:
     update_selected_provider(user_selected_provider)

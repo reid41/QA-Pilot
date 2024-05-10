@@ -1,5 +1,7 @@
 from langchain_community.chat_models import ChatOllama
-from langchain_community.chat_models import ChatOpenAI
+# from langchain_community.chat_models import ChatOpenAI
+from langchain_mistralai.chat_models import ChatMistralAI
+from langchain_openai import ChatOpenAI
 from langchain_community.embeddings import HuggingFaceEmbeddings
 import os
 import configparser
@@ -25,6 +27,9 @@ def get_chat_model(provider, model_name):
     elif provider == 'openai':
         load_dotenv()
         return ChatOpenAI(model_name=model_name)
+    elif provider == 'mistralai':
+        load_dotenv()
+        return ChatMistralAI(model_name=model_name)
     else:
         raise ValueError(f"Unsupported model provider: {provider}")
     
