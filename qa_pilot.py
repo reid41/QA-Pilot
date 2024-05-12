@@ -20,9 +20,9 @@ import tarfile
 import configparser
 from dotenv import load_dotenv, set_key
 import pathlib
-# from langchain_community.chat_models import ChatOpenAI
 from langchain_mistralai.chat_models import ChatMistralAI
 from langchain_openai import ChatOpenAI
+import json
 
 # select the llm model
 # define the config path
@@ -101,6 +101,7 @@ provider_info_map = {
     }
 }
 
+
 # Validate the API key's effectiveness
 def validate_provider_api_key(provider, api_key):
     if provider == "openai" and (not api_key.startswith("sk-")):
@@ -123,6 +124,7 @@ def validate_provider_api_key(provider, api_key):
         st.error(f"Failed to initialize model with provided API Key: {str(e)}")
         return False 
 
+
 # config the key when input
 def handle_api_key(provider, env_key):
     load_dotenv()
@@ -139,6 +141,7 @@ def handle_api_key(provider, env_key):
                 st.rerun()
             else:
                 st.error("Please provide a valid API Key.")
+
 
 # add a switch
 if st.sidebar.button("Edit QA-Pilot Settings"):
@@ -336,18 +339,42 @@ def chat_message_func():
 
     # Display chat messages from history on app rerun
     for message in st.session_state.get('messages', []):
-        with st.chat_message(message["role"]):
-            st.markdown(message["content"])
+        # with st.chat_message(message["role"]):
+        #     st.markdown(message["content"])
+        role = message["role"]
+        content = message["content"]
+
+        # fix the json display issue
+        with st.chat_message(role):
+            if isinstance(content, str):
+                try:
+                    # resolve JSON
+                    content_data = json.loads(content)
+                    # if json, st.json to pretty
+                    st.json(content_data)
+                except json.JSONDecodeError:
+                    # not json, display with markdown
+                    st.markdown(content)
+            else:
+                # if not str (e.g. list or dict), just display
+                st.write(content)
 
     # set the prompt
     if prompt := st.chat_input("Enter the question here."):
+        if prompt:
+            # search source with rsd:
+            if prompt.startswith("rsd:"):
+                prompt = prompt[4:].strip()
+                rsd = True
+            else:
+                rsd = False
         # update to chat message history
         st.session_state.messages.append({"role": "user", "content": prompt})
         # show the message in the chat
         with st.chat_message("user"):
             st.markdown(prompt)
         # get the answer from the chain
-        qa_answer = data_handler.retrieval_qa(prompt)
+        qa_answer = data_handler.retrieval_qa(prompt, rsd=rsd)
         with st.chat_message("assistant"):
             # streaming output
             st.write_stream(response_generator(qa_answer))
@@ -407,7 +434,7 @@ if not edit_settings_flag:
             # it can easy to use the same handle procedure with git url
             pseudo_git_url = f"https://qa_pilot.app/UploadedRepo/{uploaded_repo_name}.git"
             
-            # 更新session_state中的git_repo_url为伪URL
+            # update session_state git_repo_url to pseudo URL
             st.session_state['git_repo_url'] = pseudo_git_url
 
             st.success("File processed successfully!")
