@@ -2,7 +2,7 @@
   <img src="https://github.com/reid41/QA-Pilot/assets/25558653/4b45b525-5fac-4a3c-94e9-46364bdb36c3" alt="qa-pilot">
 </p>
 
-QA-Pilot is an interactive chat project that leverages online/local LLM for rapid understanding and navigation of GitHub code repository or compressed file resources(e.g. xz, zip).
+QA-Pilot is an interactive chat project that leverages online/local LLM for rapid understanding and navigation of GitHub code repository or compressed file resource(e.g. xz, zip).
 
 ### Features
 
@@ -10,8 +10,8 @@ QA-Pilot is an interactive chat project that leverages online/local LLM for rapi
 * Chat with compressed file(directories, e.g. xz, zip) with upload way
 * Store the chat history 
 * Easy to set the configuration
-* Multiple chat session
-* Search the source document
+* Multiple chat sessions
+* Search the source documents
 * Support the different LLM models
     * ollama
     * openai
