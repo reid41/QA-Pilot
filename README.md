@@ -2,14 +2,17 @@
   <img src="https://github.com/reid41/QA-Pilot/assets/25558653/4b45b525-5fac-4a3c-94e9-46364bdb36c3" alt="qa-pilot">
 </p>
 
-QA-Pilot can chat with github repository or a compressd file(e.g. xz, zip) and using the online/local LLM. 
+QA-Pilot is an interactive chat project that leverages online/local LLM for rapid understanding and navigation of GitHub code repository or compressed file resources(e.g. xz, zip).
 
 ### Features
 
 * Chat with github public repository with git clone way
 * Chat with compressed file(directories, e.g. xz, zip) with upload way
 * Store the chat history 
-* Select the different LLM models
+* Easy to set the configuration
+* Multiple chat session
+* Search the source document
+* Support the different LLM models
     * ollama
     * openai
     * mistralai
@@ -56,9 +59,9 @@ ollama pull <model_name>
 ollama list
 ```
 
-6. Setup OpenAI, add the key in `.env`
+6. Setup [OpenAI](https://platform.openai.com/docs/overview) or [MistralAI](https://docs.mistral.ai/), add the key in `.env`
 
-7. Set the related parameters in `config/config.ini`, e.g. `model provider`, `model`, `variable`
+7. Set the related parameters in `config/config.ini`, e.g. `model provider`, `model`, `variable`, `Ollama API url`
 
 8. Run the QA-Pilot:
 
@@ -70,4 +73,5 @@ streamlit run qa_pilot.py
 * Do not use url and upload at the same time.
 * The remove button cannot really remove the local chromadb, need to remove it manually when stop it.
 * Switch to `New Source Button` to add a new project
+* To return source documents and start with `rsd:` input
 

@@ -183,9 +183,23 @@ def remove_directory(dir_path):
         # remove it
         shutil.rmtree(dir_path, ignore_errors=True)
 
+
+# serialize the source data
+def serialize_documents(source_documents):
+    serialized_data = []
+    for doc in source_documents:
+        # get serialized_data
+        serialized_data.append({
+            'content': doc.page_content,
+            'source': doc.metadata.get('source', 'Unknown source')
+        })
+    return serialized_data
+
+
 # get the llm model and embedding model
 current_selected_provider, current_selected_model = get_selected_provider_and_model()
 eb_current_selected_provider, eb_current_selected_model = get_embedding_selected_provider_and_model()
+
 
 class DataHandler:
     def __init__(self, git_url) -> None:
@@ -335,15 +349,20 @@ class DataHandler:
         # save the repo name
         self.save_repo_info_to_json()
 
-
     # create a chain, send the message into llm and ouput the answer
-    def retrieval_qa(self, query):
+    def retrieval_qa(self, query, rsd=False):
         chat_history = list(self.ChatQueue.queue)
         qa = ConversationalRetrievalChain.from_llm(
             self.model, 
             chain_type="stuff", 
             retriever=self.retriever, 
-            condense_question_llm = self.model)
+            condense_question_llm = self.model,
+            return_source_documents=True)
         result = qa({"question": query, "chat_history": chat_history})
         self.update_chat_queue((query, result["answer"]))
-        return result['answer']
+        # add the search source documents
+        serialized_docs = serialize_documents(result['source_documents'])
+        if rsd:
+            return serialized_docs
+        else:
+            return result['answer']
