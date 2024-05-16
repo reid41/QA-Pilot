@@ -94,5 +94,5 @@ python codegraph/codegraph.py
 * The remove button cannot really remove the local chromadb, need to remove it manually when stop it.
 * Switch to `New Source Button` to add a new project
 * To return source documents and start with `rsd:` input
-* Click `Open Code Graph` to view the code(make sure the the already in the project session and loaded before click)
+* Click `Open Code Graph` in `QA-Pilot` to view the code(make sure the the already in the project session and loaded before click)
 
