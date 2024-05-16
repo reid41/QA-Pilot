@@ -4,6 +4,7 @@ from helper import (
     scan_vectorstore_for_repos, 
     DataHandler, 
     project_dir,
+    sessions_dir,
     save_session, 
     load_session,
     update_repo_urls,
@@ -36,6 +37,9 @@ selected_provider = config.get('model_providers', 'selected_provider')
 model_section = f"{selected_provider}_llm_models"
 selected_model = config.get(model_section, 'selected_model')
 edit_settings_flag = False
+
+codegraph_flag = config.get("codegraph", 'enabled')
+codegraph_host = config.get("codegraph", "codegraph_host")
 
 
 def save_config(config):
@@ -142,6 +146,55 @@ def handle_api_key(provider, env_key):
             else:
                 st.error("Please provide a valid API Key.")
 
+# codegraph
+if codegraph_flag == 'True':
+  st.sidebar.markdown(
+    f"""
+    <style>
+    .custom-button-container {{
+        display: flex;
+        justify-content: flex-start;
+        margin-top: -10px; /* move up */
+    }}
+
+    .custom-button {{
+        display: inline-block;
+        padding: 10px 20px;
+        font-size: 16px;
+        cursor: pointer;
+        text-align: center;
+        text-decoration: none;
+        outline: none;
+        color: black;
+        background-color: transparent;
+        border: 2px solid transparent; /* remove border */
+        border-radius: 8px;
+        transition: all 0.3s ease;
+    }}
+
+    .custom-button:hover {{
+        background-color: white;
+        color: red;
+    }}
+    </style>
+    <div class="custom-button-container">
+        <a href="{codegraph_host}" target="_blank">
+            <div class="custom-button">Open Code Graph</div>
+        </a>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+  
+
+def write_current_repo_path(repo_full_path):
+    """
+    save the selected repo path
+    """
+    file_path = os.path.join(sessions_dir, "the_current_selected_repo.txt")
+    with open(file_path, 'w') as file:
+        file.write(repo_full_path)
+
 
 # add a switch
 if st.sidebar.button("Edit QA-Pilot Settings"):
@@ -199,6 +252,8 @@ if st.sidebar.button("New Source Button"):
         'messages': [],
         'init': True,
     })
+    repo_full_path = ""
+    write_current_repo_path(repo_full_path)
 
 
 # initial git_repo_url if not in session_state
@@ -251,6 +306,10 @@ def select_repo(repo):
     # st.session_state['messages'] = db_helper.load_session(repo)
     print("Loaded session for", repo)
     print("Exiting select_repo") 
+
+    # save for codegraph
+    repo_full_path = os.path.join(project_dir, repo)
+    write_current_repo_path(repo_full_path)
 
 
 # design the sidebar for two columns, repo button and remove button
@@ -328,6 +387,8 @@ def init_or_load_db(data_handler):
     st.session_state['current_repo'] = data_handler.repo_name
     st.session_state['repos'] = scan_vectorstore_for_repos()
     st.session_state['data_loaded'] = True
+    repo_full_path = os.path.join(project_dir, data_handler.repo_name)
+    write_current_repo_path(repo_full_path)
 
 
 def chat_message_func():

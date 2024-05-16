@@ -12,6 +12,7 @@ QA-Pilot is an interactive chat project that leverages online/local LLM for rapi
 * Easy to set the configuration
 * Multiple chat sessions
 * Search the source documents
+* Integrate with `codegraph` to view the python file
 * Support the different LLM models
     * ollama
     * openai
@@ -69,9 +70,24 @@ ollama list
 streamlit run qa_pilot.py
 ```
 
+9. Enable `codegraph` in `config/config.ini` and set the `host ip`(localhost by default)
+
+```shell
+[codegraph]
+enabled = True
+codegraph_host = http://localhost:5001
+```
+
+10. Open another terminal to run:
+
+```shell
+python codegraph/codegraph.py
+```
+
 ### Tips
 * Do not use url and upload at the same time.
 * The remove button cannot really remove the local chromadb, need to remove it manually when stop it.
 * Switch to `New Source Button` to add a new project
 * To return source documents and start with `rsd:` input
+* Click `Open Code Graph` to view the code(make sure the the already in the project session and loaded before click)
 

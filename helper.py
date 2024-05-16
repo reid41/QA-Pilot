@@ -9,6 +9,8 @@ import shutil
 from urllib.parse import urlparse
 import configparser
 from langchain.chains import ConversationalRetrievalChain
+from langchain_core.prompts.prompt import PromptTemplate
+from langchain.chains import ConversationChain
 from qa_model_apis import (
     get_chat_model,
     get_embedding_model,
@@ -366,3 +368,17 @@ class DataHandler:
             return serialized_docs
         else:
             return result['answer']
+        
+    def restrieval_qa_for_code(self, query):
+        code_template = """I want you to act as a Senior Python developer. 
+        I will provide you the code project, you provide detailed exaplanation. 
+        Human: {input}
+        History: {history}
+        AI:"""
+        PROMPT = PromptTemplate(input_variables=["input", "history"], template=code_template)
+        conversation = ConversationChain(
+            prompt=PROMPT,
+            llm=self.model,
+        )
+        code_anaylsis = conversation.predict(input=query)
+        return code_anaylsis
