@@ -78,7 +78,7 @@ enabled = True
 codegraph_host = http://localhost:5001
 ```
 
-10. Open anther terminal to run:
+10. Open another terminal to run:
 
 ```shell
 python codegraph/codegraph.py
