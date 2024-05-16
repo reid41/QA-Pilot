@@ -24,7 +24,12 @@ QA-Pilot is an interactive chat project that leverages online/local LLM for rapi
 * `Do not use models for analyzing your critical or production data!!`
 * `Do not use models for analyzing customer data to ensure data privacy and security!!`
 
+#### QA-Pilot
 ![Image Alt text](/images/qa_pilot1.jpg)
+
+#### CodeGraph
+![codegraph](https://github.com/reid41/QA-Pilot/assets/25558653/d06b8946-12be-46f3-b137-a1a237192b4a)
+
 
 To deploy QA-Pilot, you can follow the below steps:
 
