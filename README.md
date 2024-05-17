@@ -23,6 +23,7 @@ QA-Pilot is an interactive chat project that leverages online/local LLM for rapi
 * This is a test project to validate the feasibility of a fully local solution for question answering using LLMs and Vector embeddings. It is not production ready, and it is not meant to be used in production. 
 * `Do not use models for analyzing your critical or production data!!`
 * `Do not use models for analyzing customer data to ensure data privacy and security!!`
+* `Do not use models for analyzing you private/sensitivity code respository!!`
 
 #### QA-Pilot
 ![Image Alt text](/images/qa_pilot1.jpg)
