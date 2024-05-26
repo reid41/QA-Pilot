@@ -93,7 +93,7 @@ db_port = 5432
 python check_postgresql_connection.py
 ```
 
-9. Download and install [node.js](https://nodejs.org/en/download/package-manager) and Set up the fontend env in one terminal
+8. Download and install [node.js](https://nodejs.org/en/download/package-manager) and Set up the fontend env in one terminal
 ```shell
 # make sure the backend server host ip is correct, localhost is by default
 cat svelte-app/src/config.js
@@ -106,7 +106,7 @@ npm install
 npm run dev
 ```
 
-10. Run the backend QA-Pilot in another terminal:
+9. Run the backend QA-Pilot in another terminal:
 
 ```shell
 python qa_pilot_run.py
