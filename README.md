@@ -2,12 +2,11 @@
   <img src="https://github.com/reid41/QA-Pilot/assets/25558653/4b45b525-5fac-4a3c-94e9-46364bdb36c3" alt="qa-pilot">
 </p>
 
-QA-Pilot is an interactive chat project that leverages online/local LLM for rapid understanding and navigation of GitHub code repository or compressed file resource(e.g. xz, zip).
+QA-Pilot is an interactive chat project that leverages online/local LLM for rapid understanding and navigation of GitHub code repository.
 
 ### Features
 
 * Chat with github public repository with git clone way
-* Chat with compressed file(directories, e.g. xz, zip) with upload way
 * Store the chat history 
 * Easy to set the configuration
 * Multiple chat sessions
@@ -17,6 +16,11 @@ QA-Pilot is an interactive chat project that leverages online/local LLM for rapi
     * ollama
     * openai
     * mistralai
+
+
+### Release
+
+* 2024-05-26 Release v2.0.1: Refactoring to replace `Streamlit` fontend with `Svelte` to improve the performance.
 
 ### Disclaimer
 
@@ -38,6 +42,7 @@ To deploy QA-Pilot, you can follow the below steps:
 
 ```shell
 git clone https://github.com/reid41/QA-Pilot.git
+cd QA-Pilot
 ```
 
 2. Install [conda](https://www.anaconda.com/download) for virtual environment management. Create and activate a new virtual environment.
@@ -68,32 +73,49 @@ ollama list
 
 6. Setup [OpenAI](https://platform.openai.com/docs/overview) or [MistralAI](https://docs.mistral.ai/), add the key in `.env`
 
-7. Set the related parameters in `config/config.ini`, e.g. `model provider`, `model`, `variable`, `Ollama API url`
-
-8. Run the QA-Pilot:
-
+7. Set the related parameters in `config/config.ini`, e.g. `model provider`, `model`, `variable`, `Ollama API url` and setup the [Postgresql](https://www.postgresql.org/download/) env
 ```shell
-streamlit run qa_pilot.py
+# create the db, e.g.
+CREATE DATABASE qa_pilot_chatsession_db;
+CREATE USER qa_pilot_user WITH ENCRYPTED PASSWORD 'qa_pilot_p';
+GRANT ALL PRIVILEGES ON DATABASE qa_pilot_chatsession_db TO qa_pilot_user;
+
+# set the connection
+cat config/config.ini
+[database]
+db_name = qa_pilot_chatsession_db
+db_user = qa_pilot_user
+db_password = qa_pilot_p
+db_host = localhost
+db_port = 5432
+
+
+# set the arg in script and test connection
+python check_postgresql_connection.py
 ```
 
-9. Enable `codegraph` in `config/config.ini` and set the `host ip`(localhost by default)
-
+9. Download and install [node.js](https://nodejs.org/en/download/package-manager) and Set up the fontend env in one terminal
 ```shell
-[codegraph]
-enabled = True
-codegraph_host = http://localhost:5001
+# make sure the backend server host ip is correct, localhost is by default
+cat svelte-app/src/config.js
+export const API_BASE_URL = 'http://localhost:5000';
+
+# install deps
+cd svelte-app
+npm install
+
+npm run dev
 ```
 
-10. Open another terminal to run:
+10. Run the backend QA-Pilot in another terminal:
 
 ```shell
-python codegraph/codegraph.py
+python qa_pilot_run.py
 ```
 
 ### Tips
 * Do not use url and upload at the same time.
 * The remove button cannot really remove the local chromadb, need to remove it manually when stop it.
 * Switch to `New Source Button` to add a new project
-* To return source documents and start with `rsd:` input
 * Click `Open Code Graph` in `QA-Pilot` to view the code(make sure the the already in the project session and loaded before click)
 

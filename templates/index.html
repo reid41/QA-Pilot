@@ -22,6 +22,10 @@
             border-right: 1px solid black;
             padding-left: 10px;
             overflow-y: auto;
+            background-color: #333;
+            color: white;
+            font-size: 17px;
+            font-family: Arial, sans-serif;
         }
 
         #cy-container {
@@ -63,6 +67,7 @@
         }
 
         #legend-list {
+            font-family: Arial, sans-serif;
             display: flex;
             list-style: none;
             margin: 0;
@@ -147,24 +152,47 @@
         .directory {
             font-weight: bold;
             cursor: pointer;
-            color: #1e88e5;
+            color: white;
         }
 
         .file {
             cursor: pointer;
-            color: #555;
+            color: white;
         }
 
         .directory .fa-folder {
-            color: #1e88e5;
+            color: #f9a825;
         }
 
         .file .fa-file {
-            color: #a0a0a0;
+            color: #5E97F6;
         }
 
         .selected {
-            background-color: #e0e0e0; /* Selected effect */
+            background-color: #555; /* Selected effect */
+        }
+
+        #zoom-buttons {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            z-index: 1000;
+        }
+
+        .zoom-button {
+            background-color: #333;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            font-size: 18px;
+            margin: 5px;
+            cursor: pointer;
+        }
+
+        .zoom-button:hover {
+            background-color: #555;
         }
     </style>
 </head>
@@ -174,6 +202,10 @@
         <div id="cy"></div>
         <div id="color-legend">
             <ul id="legend-list"></ul>
+        </div>
+        <div id="zoom-buttons">
+            <button class="zoom-button" onclick="zoomIn()">+</button>
+            <button class="zoom-button" onclick="zoomOut()">-</button>
         </div>
     </div>
     <script>
@@ -482,6 +514,22 @@
                     var container = document.getElementById('file-tree');
                     buildFileTree(data, container);
                 });
+        }
+
+        /**
+         * Zoom in the graph
+         */
+        function zoomIn() {
+            window.cy.zoom(window.cy.zoom() * 1.2);
+            window.cy.center();
+        }
+
+        /**
+         * Zoom out the graph
+         */
+        function zoomOut() {
+            window.cy.zoom(window.cy.zoom() * 0.8);
+            window.cy.center();
         }
     </script>
 </body>
