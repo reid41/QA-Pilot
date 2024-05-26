@@ -30,11 +30,10 @@ QA-Pilot is an interactive chat project that leverages online/local LLM for rapi
 * `Do not use models for analyzing you private/sensitivity code respository!!`
 
 #### QA-Pilot
-![Image Alt text](/images/qa_pilot1.jpg)
+![qa-demo](https://github.com/reid41/QA-Pilot/assets/25558653/7bb6948f-6322-4ad6-b40a-bf6b8ca42f4c)
 
 #### CodeGraph
-![codegraph](https://github.com/reid41/QA-Pilot/assets/25558653/d06b8946-12be-46f3-b137-a1a237192b4a)
-
+![codegraph-new](https://github.com/reid41/QA-Pilot/assets/25558653/692f36fd-6037-4255-9e72-8c9fcd409f78)
 
 To deploy QA-Pilot, you can follow the below steps:
 
