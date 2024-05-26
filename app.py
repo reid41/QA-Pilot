@@ -2,7 +2,11 @@ from flask import Flask, jsonify, request, render_template
 from flask_cors import CORS
 import configparser
 import os
-from helper import DataHandler
+from helper import (
+    DataHandler,
+    project_dir,
+    remove_directory,
+)
 import psycopg2
 from psycopg2 import sql
 import ast 
@@ -235,10 +239,18 @@ def delete_session(session_id):
     cursor = conn.cursor()
 
     try:
+        cursor.execute('SELECT name FROM sessions WHERE id = %s', (session_id,))
+        session = cursor.fetchone()
+        if session:
+            session_name = session[0]
+            print("anem", session_name)
         cursor.execute('DELETE FROM sessions WHERE id = %s', (session_id,))
         conn.commit()
         cursor.execute(sql.SQL('DROP TABLE IF EXISTS {}').format(sql.Identifier(f'session_{session_id}')))
         conn.commit()
+        # remove the git clone project
+        remove_project_path = os.path.join("projects", session_name)
+        remove_directory(remove_project_path)
         print("Session deleted successfully")
         return jsonify({"message": "Session deleted successfully!"})
     except Exception as e:
@@ -397,7 +409,6 @@ def build_file_tree(directory):
 @app.route('/directory')
 def directory():
     current_repo_path = read_current_repo_path()
-    # current_repo_path = os.path.join("projects", "QA-Pilot")
     if current_repo_path is None:
         return jsonify({'error': 'Repository path not set or not found'}), 404
     dir_tree = build_file_tree(current_repo_path)  # Ensure the path points to your code directory
