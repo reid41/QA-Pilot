@@ -22,6 +22,9 @@
     let selectedModel = '';
     let showDefaultMessage = true;
     let sessionToDelete = null;
+    let searchKeyword = '';
+    let filteredSessions = [];
+
 
     async function fetchConfig() {
         try {
@@ -173,6 +176,9 @@
                     loadMessages(sessions[0].id);
                     showDefaultMessage = false;
                 }
+
+                // initial filter session
+                filteredSessions()
             } else {
                 console.error('Failed to load sessions');
             }
@@ -260,9 +266,23 @@
         showDeleteModal = false;
     }
 
+    function handleSearch(event) {
+        searchKeyword = event.target.value.toLowerCase();
+        filterSessions();
+    }
+
+    function filterSessions() {
+        if (searchKeyword) {
+            filteredSessions = sessions.filter(session => session.name.toLowerCase().includes(searchKeyword));
+        } else {
+            filteredSessions = sessions;
+        }
+    }
+
     onMount(async () => {
         await loadSessions();
         await fetchConfig();
+        filterSessions(); //initial filter session
     });
 </script>
 
@@ -280,6 +300,15 @@
         display: flex;
         flex-direction: column;
         padding: 10px;
+    }
+
+    .sidebar input {
+        background-color: #3a3a3a;
+        border: none;
+        color: white;
+        padding: 10px;
+        font-size: 16px;
+        margin: 5px 0;
     }
 
     .sidebar button {
@@ -361,7 +390,20 @@
         <button on:click={openCodeGraph}>Open Code Graph</button>
         <button on:click={toggleConfigEditor}>Edit QA-Pilot Settings</button>
         <button on:click={openNewSourceModal}>New Source Button</button>
-        {#each sessions as session, index}
+        <!-- {#each sessions as session, index}
+            <div class="session-item">
+                <button on:click={() => switchSession(index)} class:active={index === currentSessionIndex}>
+                    {session.name}
+                </button>
+                <button class="delete-button" on:click={() => confirmDeleteSession(index)}>🗑️</button>
+            </div>
+        {/each} -->
+
+        <!-- 搜索输入框 -->
+        <input type="text" placeholder="Search sessions" on:input={handleSearch} bind:value={searchKeyword} />
+
+        <!-- 会话列表 -->
+        {#each filteredSessions as session, index}
             <div class="session-item">
                 <button on:click={() => switchSession(index)} class:active={index === currentSessionIndex}>
                     {session.name}
@@ -369,6 +411,8 @@
                 <button class="delete-button" on:click={() => confirmDeleteSession(index)}>🗑️</button>
             </div>
         {/each}
+
+    
     </div>
     <div class="content">
         <div class="header">{currentSessionIndex !== -1 ? sessions[currentSessionIndex].name : 'QA-Pilot'}</div>
