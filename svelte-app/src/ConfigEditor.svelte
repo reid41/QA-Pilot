@@ -7,7 +7,7 @@
 
     async function handleSaveConfig() {
         saveConfig();
-        toggleConfigEditor(); // close the windows
+        toggleConfigEditor(); // close the editor
     }
   </script>
   
@@ -45,11 +45,17 @@
     .config-editor input {
       width: 100%;
       margin-bottom: 10px;
-      background-color: #3a3a3a;
-      color: white;
-      border: none;
-      padding: 5px;
+      background-color: #3a3a3a; 
+      color: #ccc; 
+      border: 1px solid #777; 
+      padding: 10px; 
+      border-radius: 5px; 
     }
+
+  .config-editor input:focus {
+    outline: none;
+    border-color: #bbb; 
+  }
   
     .config-editor-buttons {
       display: flex;
