@@ -22,6 +22,7 @@
     let selectedModel = '';
     let showDefaultMessage = true;
     let sessionToDelete = null;
+    let sessionToDeleteName = '';
     let searchKeyword = '';
     let filteredSessions = [];
 
@@ -97,12 +98,15 @@
         await loadRepo(gitUrl);
     }
 
-    async function switchSession(index) {
-        currentSessionIndex = index;
-        currentRepo = sessions[index].url;
-        await updateCurrentSession(sessions[index]);
-        loadMessages(sessions[index].id);
-    }
+
+    async function switchSession(sessionId) {
+            const index = sessions.findIndex(session => session.id === sessionId);
+            currentSessionIndex = index;
+            currentRepo = sessions[index].url;
+            await updateCurrentSession(sessions[index]);
+            loadMessages(sessions[index].id);
+        }
+
 
     async function updateCurrentSession(session) {
         try {
@@ -178,7 +182,7 @@
                 }
 
                 // initial filter session
-                filteredSessions()
+                filterSessions()
             } else {
                 console.error('Failed to load sessions');
             }
@@ -252,15 +256,20 @@
         window.open(`${API_BASE_URL}/codegraph`, '_blank');
     }
 
-    function confirmDeleteSession(index) {
-        sessionToDelete = index;
-        showDeleteModal = true;
-    }
+    function confirmDeleteSession(sessionId) {
+            sessionToDelete = sessionId;
+            const session = sessions.find(s => s.id === sessionId);
+            sessionToDeleteName = session ? session.name : '';
+            showDeleteModal = true;
+        }
 
-    function handleConfirmDelete() {
-        deleteSession(sessionToDelete);
-        showDeleteModal = false;
+    async function handleConfirmDelete() {
+    const index = sessions.findIndex(session => session.id === sessionToDelete);
+    if (index !== -1) {
+        deleteSession(index);
     }
+    showDeleteModal = false;
+}
 
     function handleCancelDelete() {
         showDeleteModal = false;
@@ -390,28 +399,18 @@
         <button on:click={openCodeGraph}>Open Code Graph</button>
         <button on:click={toggleConfigEditor}>Edit QA-Pilot Settings</button>
         <button on:click={openNewSourceModal}>New Source Button</button>
-        <!-- {#each sessions as session, index}
-            <div class="session-item">
-                <button on:click={() => switchSession(index)} class:active={index === currentSessionIndex}>
-                    {session.name}
-                </button>
-                <button class="delete-button" on:click={() => confirmDeleteSession(index)}>🗑️</button>
-            </div>
-        {/each} -->
 
-        <!-- 搜索输入框 -->
         <input type="text" placeholder="Search sessions" on:input={handleSearch} bind:value={searchKeyword} />
 
-        <!-- 会话列表 -->
-        {#each filteredSessions as session, index}
-            <div class="session-item">
-                <button on:click={() => switchSession(index)} class:active={index === currentSessionIndex}>
-                    {session.name}
-                </button>
-                <button class="delete-button" on:click={() => confirmDeleteSession(index)}>🗑️</button>
-            </div>
-        {/each}
-
+        {#each filteredSessions as session}
+        <div class="session-item">
+            <button on:click={() => switchSession(session.id)} class:active={session.id === sessions[currentSessionIndex]?.id}>
+                {session.name}
+            </button>
+            <button class="delete-button" on:click={() => confirmDeleteSession(session.id)}>🗑️</button>
+        </div>
+    {/each}
+    
     
     </div>
     <div class="content">
@@ -445,7 +444,7 @@
 {#if showDeleteModal}
     <DeleteConfirmationModal
         isOpen={showDeleteModal}
-        sessionName={sessions[sessionToDelete] && sessions[sessionToDelete].name}
+        sessionName={sessionToDeleteName}
         on:confirm={handleConfirmDelete}
         on:cancel={handleCancelDelete} />
 {/if}
