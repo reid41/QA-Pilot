@@ -10,7 +10,7 @@ QA-Pilot is an interactive chat project that leverages online/local LLM for rapi
 * Store the chat history 
 * Easy to set the configuration
 * Multiple chat sessions
-* Search the source documents
+* Locate the session quicly with search function
 * Integrate with `codegraph` to view the python file
 * Support the different LLM models
     * ollama
@@ -30,10 +30,11 @@ QA-Pilot is an interactive chat project that leverages online/local LLM for rapi
 * `Do not use models for analyzing you private/sensitivity code respository!!`
 
 #### QA-Pilot
-![qa-demo](https://github.com/reid41/QA-Pilot/assets/25558653/7bb6948f-6322-4ad6-b40a-bf6b8ca42f4c)
+![qa-demo-new](https://github.com/reid41/QA-Pilot/assets/25558653/8198730f-32ec-4664-a10c-43b3f40c99ad)
+
 
 #### CodeGraph
-![codegraph-new](https://github.com/reid41/QA-Pilot/assets/25558653/692f36fd-6037-4255-9e72-8c9fcd409f78)
+![code-graph-new](https://github.com/reid41/QA-Pilot/assets/25558653/8c47ea00-d703-42b5-b43b-d40796e7de1d)
 
 To deploy QA-Pilot, you can follow the below steps:
 
