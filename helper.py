@@ -11,6 +11,7 @@ import configparser
 from langchain.chains import ConversationalRetrievalChain
 from langchain_core.prompts.prompt import PromptTemplate
 from langchain.chains import ConversationChain
+from cachetools import cached, TTLCache
 from qa_model_apis import (
     get_chat_model,
     get_embedding_model,
@@ -201,10 +202,11 @@ def serialize_documents(source_documents):
 # get the llm model and embedding model
 current_selected_provider, current_selected_model = get_selected_provider_and_model()
 eb_current_selected_provider, eb_current_selected_model = get_embedding_selected_provider_and_model()
-
+cache = TTLCache(maxsize=100, ttl=300)
 
 class DataHandler:
-    def __init__(self, git_url) -> None:
+    # def __init__(self, git_url) -> None:
+    def __init__(self, git_url, chat_model, embedding_model) -> None:
         self.git_url = git_url
         last_part = git_url.split('/')[-1]
         self.repo_name = last_part.rsplit('.', 1)[0]
@@ -216,8 +218,10 @@ class DataHandler:
         # config the path
         self.db_dir = os.path.join(vectorstore_dir, self.repo_name)
         self.download_path = os.path.join(project_dir, self.repo_name) 
-        self.model = get_chat_model(current_selected_provider, current_selected_model)
-        self.embedding_model = get_embedding_model(eb_current_selected_provider, eb_current_selected_model, model_kwargs, encode_kwargs)
+        # self.model = get_chat_model(current_selected_provider, current_selected_model)
+        # self.embedding_model = get_embedding_model(eb_current_selected_provider, eb_current_selected_model, model_kwargs, encode_kwargs)
+        self.model = chat_model
+        self.embedding_model = embedding_model     
         self.ChatQueue =  Queue(maxsize=2)
 
     # check the db dir exist or not
@@ -341,8 +345,10 @@ class DataHandler:
             self.split_files()
             self.db = self.store_chroma()
         else:
+            print("start-->chromadb")
             # Just load the DB
             self.db = Chroma(persist_directory=self.db_dir, embedding_function=self.embedding_model)
+            print("end-->chromadb")
         
         self.retriever = self.db.as_retriever()
         self.retriever.search_kwargs['k'] = 3
@@ -352,33 +358,44 @@ class DataHandler:
         self.save_repo_info_to_json()
 
     # create a chain, send the message into llm and ouput the answer
+    @cached(cache)
     def retrieval_qa(self, query, rsd=False):
+        from datetime import datetime
         chat_history = list(self.ChatQueue.queue)
+
         qa = ConversationalRetrievalChain.from_llm(
             self.model, 
             chain_type="stuff", 
             retriever=self.retriever, 
             condense_question_llm = self.model,
             return_source_documents=True)
+        
         result = qa({"question": query, "chat_history": chat_history})
+
         self.update_chat_queue((query, result["answer"]))
+
         # add the search source documents
         serialized_docs = serialize_documents(result['source_documents'])
+
         if rsd:
             return serialized_docs
         else:
             return result['answer']
         
+    @cached(cache)
     def restrieval_qa_for_code(self, query):
+        from datetime import datetime
         code_template = """I want you to act as a Senior Python developer. 
         I will provide you the code project, you provide detailed exaplanation. 
         Human: {input}
         History: {history}
         AI:"""
         PROMPT = PromptTemplate(input_variables=["input", "history"], template=code_template)
+        print("-->", datetime.now())
         conversation = ConversationChain(
             prompt=PROMPT,
             llm=self.model,
         )
+        print("-->", datetime.now())
         code_anaylsis = conversation.predict(input=query)
         return code_anaylsis
