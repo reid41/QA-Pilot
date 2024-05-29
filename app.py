@@ -6,10 +6,16 @@ from helper import (
     DataHandler,
     project_dir,
     remove_directory,
+    encode_kwargs,
+    model_kwargs,
 )
 import psycopg2
 from psycopg2 import sql
 import ast 
+from qa_model_apis import (
+    get_chat_model,
+    get_embedding_model,
+)
 
 app = Flask(__name__)
 # CORS(app)
@@ -27,6 +33,15 @@ DB_PORT = config['database']['db_port']
 
 # for analysze code
 current_session = None
+
+current_model_info = {
+    "provider": None,
+    "model": None,
+    "eb_provider": None,
+    "eb_model": None,
+    "chat_model": None,
+    "embedding_model": None
+}
 
 def init_db():
     conn = psycopg2.connect(
@@ -53,6 +68,25 @@ def init_db():
         current_session = {'id': session[0], 'name': session[1], 'url': session[2]}
         print("Default session set to:", current_session)
     conn.close()
+
+def load_models_if_needed():
+    selected_provider = config.get('model_providers', 'selected_provider')
+    selected_model = config.get(f"{selected_provider}_llm_models", 'selected_model')
+    eb_selected_provider = config.get('embedding_model_providers', 'selected_provider')
+    eb_selected_model = config.get(f"{eb_selected_provider}_embedding_models", 'selected_model')
+    
+    if (current_model_info["provider"] != selected_provider or 
+        current_model_info["model"] != selected_model or 
+        current_model_info["eb_provider"] != eb_selected_provider or 
+        current_model_info["eb_model"] != eb_selected_model):
+        current_model_info["provider"] = selected_provider
+        current_model_info["model"] = selected_model
+        current_model_info["eb_provider"] = eb_selected_provider
+        current_model_info["eb_model"] = eb_selected_model
+        current_model_info["chat_model"] = get_chat_model(selected_provider, selected_model)
+        current_model_info["embedding_model"] = get_embedding_model(eb_selected_provider, eb_selected_model, model_kwargs, encode_kwargs)
+        print(f"Loaded new models: provider={selected_provider}, model={selected_model}")
+
 
 def create_message_table(session_id):
     conn = psycopg2.connect(
@@ -124,7 +158,7 @@ def load_repo():
     if not git_url:
         return jsonify({"error": "Git URL is required"}), 400
 
-    data_handler = DataHandler(git_url)
+    data_handler = DataHandler(git_url, '', '')
     try:
         data_handler.git_clone_repo()
         data_handler.load_into_db()
@@ -134,6 +168,10 @@ def load_repo():
 
 @app.route('/chat', methods=['POST'])
 def chat():
+    load_models_if_needed()
+    chat_model = current_model_info["chat_model"]
+    embedding_model = current_model_info["embedding_model"]
+
     user_message = request.json.get('message')
     current_repo = request.json.get('current_repo')
     session_id = request.json.get('session_id')
@@ -141,7 +179,9 @@ def chat():
         return jsonify({"error": "Message, current_repo and session_id are required"}), 400
 
     try:
-        data_handler = DataHandler(current_repo)
+        import time
+        # data_handler = DataHandler(current_repo)
+        data_handler = DataHandler(current_repo, chat_model, embedding_model)
         data_handler.load_into_db()
         bot_response = data_handler.retrieval_qa(user_message)
 
@@ -416,9 +456,12 @@ def directory():
 
 @app.route('/analyze', methods=['POST'])
 def analyze():
+    load_models_if_needed()
+    chat_model = current_model_info["chat_model"]
+    embedding_model = current_model_info["embedding_model"]
     code = request.json.get('code', '')
     # send the code to LLM
-    data_handler = DataHandler(git_url='')
+    data_handler = DataHandler(git_url='', chat_model=chat_model, embedding_model=embedding_model)
     code_analysis = data_handler.restrieval_qa_for_code(code)
     return jsonify({'analysis': code_analysis})
 
