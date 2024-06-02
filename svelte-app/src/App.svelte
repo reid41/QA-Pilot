@@ -4,11 +4,13 @@
     import Chat from './Chat.svelte';
     import { marked } from 'marked';
     import NewSourceModal from './NewSourceModal.svelte';
+    import ApiKeyModal from './ApiKeyModal.svelte';
     import DeleteConfirmationModal from './DeleteConfirmationModal.svelte';
     import { API_BASE_URL } from './config.js';
 
     let showConfigEditor = false;
     let showNewSourceModal = false;
+    let showApiKeyModal = false;
     let showDeleteModal = false;
     let configData = {};
     let configOrder = [];
@@ -25,7 +27,6 @@
     let sessionToDeleteName = '';
     let searchKeyword = '';
     let filteredSessions = [];
-
 
     async function fetchConfig() {
         try {
@@ -54,11 +55,11 @@
             body: JSON.stringify(configData)
         });
 
-	    if (!response.ok) {
-			alert('Failed to save configuration');
-		} else {
-			console.log('Configuration saved successfully!');
-    	}
+        if (!response.ok) {
+            alert('Failed to save configuration');
+        } else {
+            console.log('Configuration saved successfully!');
+        }
     }
 
     function updateModelList() {
@@ -98,15 +99,13 @@
         await loadRepo(gitUrl);
     }
 
-
     async function switchSession(sessionId) {
-            const index = sessions.findIndex(session => session.id === sessionId);
-            currentSessionIndex = index;
-            currentRepo = sessions[index].url;
-            await updateCurrentSession(sessions[index]);
-            loadMessages(sessions[index].id);
-        }
-
+        const index = sessions.findIndex(session => session.id === sessionId);
+        currentSessionIndex = index;
+        currentRepo = sessions[index].url;
+        await updateCurrentSession(sessions[index]);
+        loadMessages(sessions[index].id);
+    }
 
     async function updateCurrentSession(session) {
         try {
@@ -132,6 +131,14 @@
 
     function closeNewSourceModal() {
         showNewSourceModal = false;
+    }
+
+    function openApiKeyModal() {
+        showApiKeyModal = true;
+    }
+
+    function closeApiKeyModal() {
+        showApiKeyModal = false;
     }
 
     async function handleNewSource(event) {
@@ -182,7 +189,7 @@
                 }
 
                 // initial filter session
-                filterSessions()
+                filterSessions();
             } else {
                 console.error('Failed to load sessions');
             }
@@ -257,19 +264,19 @@
     }
 
     function confirmDeleteSession(sessionId) {
-            sessionToDelete = sessionId;
-            const session = sessions.find(s => s.id === sessionId);
-            sessionToDeleteName = session ? session.name : '';
-            showDeleteModal = true;
-        }
+        sessionToDelete = sessionId;
+        const session = sessions.find(s => s.id === sessionId);
+        sessionToDeleteName = session ? session.name : '';
+        showDeleteModal = true;
+    }
 
     async function handleConfirmDelete() {
-    const index = sessions.findIndex(session => session.id === sessionToDelete);
-    if (index !== -1) {
-        deleteSession(index);
+        const index = sessions.findIndex(session => session.id === sessionToDelete);
+        if (index !== -1) {
+            deleteSession(index);
+        }
+        showDeleteModal = false;
     }
-    showDeleteModal = false;
-}
 
     function handleCancelDelete() {
         showDeleteModal = false;
@@ -398,6 +405,7 @@
 
         <button on:click={openCodeGraph}>Open Code Graph</button>
         <button on:click={toggleConfigEditor}>Edit QA-Pilot Settings</button>
+        <button on:click={openApiKeyModal}>AI Vendor API Key</button>
         <button on:click={openNewSourceModal}>New Source Button</button>
 
         <input type="text" placeholder="Search sessions" on:input={handleSearch} bind:value={searchKeyword} />
@@ -409,9 +417,7 @@
             </button>
             <button class="delete-button" on:click={() => confirmDeleteSession(session.id)}>🗑️</button>
         </div>
-    {/each}
-    
-    
+        {/each}
     </div>
     <div class="content">
         <div class="header">{currentSessionIndex !== -1 ? sessions[currentSessionIndex].name : 'QA-Pilot'}</div>
@@ -439,6 +445,12 @@
         isOpen={showNewSourceModal}
         on:confirm={handleNewSource}
         on:cancel={closeNewSourceModal} />
+{/if}
+
+{#if showApiKeyModal}
+    <ApiKeyModal
+        isOpen={showApiKeyModal}
+        on:cancel={closeApiKeyModal} />
 {/if}
 
 {#if showDeleteModal}

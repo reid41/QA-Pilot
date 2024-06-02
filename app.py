@@ -2,6 +2,9 @@ from flask import Flask, jsonify, request, render_template
 from flask_cors import CORS
 import configparser
 import os
+from langchain_mistralai.chat_models import ChatMistralAI
+from langchain_openai import ChatOpenAI
+from dotenv import load_dotenv, set_key
 from helper import (
     DataHandler,
     project_dir,
@@ -298,6 +301,35 @@ def delete_session(session_id):
         return jsonify({"error": str(e)}), 500
     finally:
         conn.close()
+
+
+# api key handling functions
+@app.route('/check_api_key', methods=['POST'])
+def check_api_key():
+    data = request.json
+    provider = data.get('provider')
+    key_var = f"{provider.upper()}_API_KEY"
+    
+    from dotenv import load_dotenv
+    load_dotenv()
+    api_key = os.getenv(key_var)
+    
+    return jsonify({'exists': bool(api_key)})
+
+@app.route('/save_api_key', methods=['POST'])
+def save_api_key():
+    data = request.json
+    provider = data.get('provider')
+    api_key = data.get('api_key')
+    key_var = f"{provider.upper()}_API_KEY"
+    
+    from dotenv import set_key, load_dotenv
+    dotenv_path = '.env'
+    set_key(dotenv_path, key_var, api_key)
+    load_dotenv()
+    
+    return jsonify({'message': 'API Key saved successfully!'})
+   
 
 #############################codegraph############################
 @app.route('/codegraph')
