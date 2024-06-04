@@ -10,6 +10,7 @@ from urllib.parse import urlparse
 import configparser
 from langchain.chains import ConversationalRetrievalChain
 from langchain_core.prompts.prompt import PromptTemplate
+from langchain_core.prompts import ChatPromptTemplate, SystemMessagePromptTemplate, HumanMessagePromptTemplate
 from langchain.chains import ConversationChain
 from cachetools import cached, TTLCache
 from qa_model_apis import (
@@ -187,16 +188,23 @@ def remove_directory(dir_path):
         shutil.rmtree(dir_path, ignore_errors=True)
 
 
-# serialize the source data
-def serialize_documents(source_documents):
-    serialized_data = []
-    for doc in source_documents:
-        # get serialized_data
-        serialized_data.append({
-            'content': doc.page_content,
-            'source': doc.metadata.get('source', 'Unknown source')
-        })
-    return serialized_data
+def document_to_string(document):
+    # Get the document content
+    content = document.page_content
+    # Get the metadata
+    metadata = document.metadata
+    # Convert the metadata dictionary to a string
+    metadata_str = ', '.join(f'{key}: {value}' for key, value in metadata.items())
+    # Combine the content and metadata into a single string
+    result = f'Content: {content}\nMetadata: {metadata_str}'
+    return result
+
+def documents_to_string(documents):
+    # Convert each Document object to a string and add to the list
+    doc_strings = [document_to_string(doc) for doc in documents]
+    # Join all strings into a single large string
+    return '\n\n'.join(doc_strings)
+
 
 
 # get the llm model and embedding model
@@ -360,25 +368,34 @@ class DataHandler:
     # create a chain, send the message into llm and ouput the answer
     @cached(cache)
     def retrieval_qa(self, query, rsd=False):
-        from datetime import datetime
         chat_history = list(self.ChatQueue.queue)
-
+        qa_template = """I want you to act as a very senior code developer. 
+        and very familar with github/gitlab community,I will provide you the code project,
+        you need to provide answer which is basded on the project. 
+        {context}
+        """
+        custom_prompt = ChatPromptTemplate.from_messages([
+            SystemMessagePromptTemplate.from_template(qa_template), 
+            HumanMessagePromptTemplate.from_template("{question}")])
+                
         qa = ConversationalRetrievalChain.from_llm(
             self.model, 
             chain_type="stuff", 
             retriever=self.retriever, 
             condense_question_llm = self.model,
-            return_source_documents=True)
+            return_source_documents=True,
+            combine_docs_chain_kwargs={"prompt": custom_prompt})
         
         result = qa({"question": query, "chat_history": chat_history})
 
         self.update_chat_queue((query, result["answer"]))
 
         # add the search source documents
-        serialized_docs = serialize_documents(result['source_documents'])
+        docs_strings = document_to_string(result['source_documents'][0])
+        # docs_strings = documents_to_string(result['source_documents'])
 
         if rsd:
-            return serialized_docs
+            return docs_strings
         else:
             return result['answer']
         
