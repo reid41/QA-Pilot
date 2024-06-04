@@ -117,5 +117,6 @@ python qa_pilot_run.py
 * Do not use url and upload at the same time.
 * The remove button cannot really remove the local chromadb, need to remove it manually when stop it.
 * Switch to `New Source Button` to add a new project
+* Use `rsd:` to start the input and get the source document
 * Click `Open Code Graph` in `QA-Pilot` to view the code(make sure the the already in the project session and loaded before click)
 

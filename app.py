@@ -182,11 +182,15 @@ def chat():
         return jsonify({"error": "Message, current_repo and session_id are required"}), 400
 
     try:
-        import time
         # data_handler = DataHandler(current_repo)
         data_handler = DataHandler(current_repo, chat_model, embedding_model)
         data_handler.load_into_db()
-        bot_response = data_handler.retrieval_qa(user_message)
+        rsd = False
+        if user_message.startswith('rsd:'):
+            user_message = user_message[4:].strip()
+            rsd = True
+        bot_response = data_handler.retrieval_qa(user_message, rsd=rsd)
+        
 
         # Save user message and bot response to the session table
         conn = psycopg2.connect(
