@@ -1,8 +1,8 @@
 from langchain_community.chat_models import ChatOllama
-# from langchain_community.chat_models import ChatOpenAI
 from langchain_mistralai.chat_models import ChatMistralAI
 from langchain_openai import ChatOpenAI
-from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_huggingface.embeddings import HuggingFaceEmbeddings
+from langchain_community.embeddings import OllamaEmbeddings
 import os
 import configparser
 from dotenv import load_dotenv
@@ -16,7 +16,7 @@ base_url = config.get('ollama_llm_models', 'base_url')
 
 
 # get the chat model from config
-def get_chat_model(provider, model_name):
+def get_chat_model(provider, model_name):    
     if provider == 'ollama':
         return ChatOllama(
             base_url=base_url,
@@ -34,12 +34,17 @@ def get_chat_model(provider, model_name):
         raise ValueError(f"Unsupported model provider: {provider}")
     
 
-def get_embedding_model(eb_provider, model_name, model_kwargs, encode_kwargs):
+def get_embedding_model(eb_provider, model_name='', model_kwargs='', encode_kwargs=''):
      if eb_provider == 'huggingface': 
         return HuggingFaceEmbeddings(
                 model_name=model_name,
                 model_kwargs=model_kwargs,
                 encode_kwargs=encode_kwargs
             )
+     elif eb_provider == 'ollama':
+         return OllamaEmbeddings(
+                model=model_name,
+                model_kwargs=model_kwargs
+         )
      else:
         raise ValueError(f"Unsupported embedding model provider: {eb_provider}")

@@ -2,12 +2,9 @@ from flask import Flask, jsonify, request, render_template
 from flask_cors import CORS
 import configparser
 import os
-from langchain_mistralai.chat_models import ChatMistralAI
-from langchain_openai import ChatOpenAI
 from dotenv import load_dotenv, set_key
 from helper import (
     DataHandler,
-    project_dir,
     remove_directory,
     encode_kwargs,
     model_kwargs,
@@ -21,7 +18,6 @@ from qa_model_apis import (
 )
 
 app = Flask(__name__)
-# CORS(app)
 CORS(app, resources={r"/*": {"origins": "*"}})
 
 config_path = os.path.join('config', 'config.ini')
@@ -161,7 +157,10 @@ def load_repo():
     if not git_url:
         return jsonify({"error": "Git URL is required"}), 400
 
-    data_handler = DataHandler(git_url, '', '')
+    load_models_if_needed()
+    chat_model = current_model_info["chat_model"]
+    embedding_model = current_model_info["embedding_model"]
+    data_handler = DataHandler(git_url, chat_model, embedding_model)
     try:
         data_handler.git_clone_repo()
         data_handler.load_into_db()
@@ -314,7 +313,6 @@ def check_api_key():
     provider = data.get('provider')
     key_var = f"{provider.upper()}_API_KEY"
     
-    from dotenv import load_dotenv
     load_dotenv()
     api_key = os.getenv(key_var)
     
@@ -327,7 +325,6 @@ def save_api_key():
     api_key = data.get('api_key')
     key_var = f"{provider.upper()}_API_KEY"
     
-    from dotenv import set_key, load_dotenv
     dotenv_path = '.env'
     set_key(dotenv_path, key_var, api_key)
     load_dotenv()

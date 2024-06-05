@@ -13,10 +13,7 @@ from langchain_core.prompts.prompt import PromptTemplate
 from langchain_core.prompts import ChatPromptTemplate, SystemMessagePromptTemplate, HumanMessagePromptTemplate
 from langchain.chains import ConversationChain
 from cachetools import cached, TTLCache
-from qa_model_apis import (
-    get_chat_model,
-    get_embedding_model,
-)
+
 
 # read from the config.ini
 config_path = os.path.join('config', 'config.ini')
@@ -206,10 +203,6 @@ def documents_to_string(documents):
     return '\n\n'.join(doc_strings)
 
 
-
-# get the llm model and embedding model
-current_selected_provider, current_selected_model = get_selected_provider_and_model()
-eb_current_selected_provider, eb_current_selected_model = get_embedding_selected_provider_and_model()
 cache = TTLCache(maxsize=100, ttl=300)
 
 class DataHandler:
@@ -226,8 +219,6 @@ class DataHandler:
         # config the path
         self.db_dir = os.path.join(vectorstore_dir, self.repo_name)
         self.download_path = os.path.join(project_dir, self.repo_name) 
-        # self.model = get_chat_model(current_selected_provider, current_selected_model)
-        # self.embedding_model = get_embedding_model(eb_current_selected_provider, eb_current_selected_model, model_kwargs, encode_kwargs)
         self.model = chat_model
         self.embedding_model = embedding_model     
         self.ChatQueue =  Queue(maxsize=2)
@@ -341,6 +332,7 @@ class DataHandler:
     def store_chroma(self):  
         if not os.path.exists(self.db_dir):
             os.makedirs(self.db_dir)
+        print("eb:", self.embedding_model)
         db = Chroma.from_documents(self.texts, self.embedding_model, persist_directory=self.db_dir) 
         db.persist()  
         return db  
