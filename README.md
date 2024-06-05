@@ -20,6 +20,8 @@ QA-Pilot is an interactive chat project that leverages online/local LLM for rapi
 
 ### Release
 
+* 2024-06-05 Upgrade `langchain` to `v0.2` and add `ollama embeddings`.
+
 * 2024-05-26 Release v2.0.1: Refactoring to replace `Streamlit` fontend with `Svelte` to improve the performance.
 
 ### Disclaimer
