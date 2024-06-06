@@ -3,7 +3,6 @@ from langchain.text_splitter import CharacterTextSplitter
 from langchain_community.vectorstores import Chroma
 import git
 import os
-import json
 from queue import Queue
 import shutil
 from urllib.parse import urlparse
@@ -13,6 +12,8 @@ from langchain_core.prompts.prompt import PromptTemplate
 from langchain_core.prompts import ChatPromptTemplate, SystemMessagePromptTemplate, HumanMessagePromptTemplate
 from langchain.chains import ConversationChain
 from cachetools import cached, TTLCache
+from langchain.retrievers import ContextualCompressionRetriever
+from langchain.retrievers.document_compressors import FlashrankRerank
 
 
 # read from the config.ini
@@ -185,7 +186,7 @@ class DataHandler:
 
     # create a chain, send the message into llm and ouput the answer
     @cached(cache)
-    def retrieval_qa(self, query, rsd=False):
+    def retrieval_qa(self, query, rsd=False, rr=False):
         chat_history = list(self.ChatQueue.queue)
         qa_template = """I want you to act as a very senior code developer. 
         and very familar with github/gitlab community,I will provide you the code project,
@@ -195,11 +196,22 @@ class DataHandler:
         custom_prompt = ChatPromptTemplate.from_messages([
             SystemMessagePromptTemplate.from_template(qa_template), 
             HumanMessagePromptTemplate.from_template("{question}")])
+        
+        # add reranker
+        if rr:
+            compressor = FlashrankRerank()
+            compression_retriever = ContextualCompressionRetriever(
+                base_compressor=compressor, base_retriever=self.retriever
+            )
+            the_retriever = compression_retriever
+        else:
+            the_retriever = self.retriever
+
                 
         qa = ConversationalRetrievalChain.from_llm(
             self.model, 
             chain_type="stuff", 
-            retriever=self.retriever, 
+            retriever=the_retriever, 
             condense_question_llm = self.model,
             return_source_documents=True,
             combine_docs_chain_kwargs={"prompt": custom_prompt})
