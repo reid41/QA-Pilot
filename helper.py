@@ -29,142 +29,6 @@ base_url = config.get('ollama_llm_models', 'base_url')
 encode_kwargs = {"normalize_embeddings": False}
 model_kwargs = {"device": "cuda:0"}  
 allowed_extensions = ['.py', '.md', '.log']
-        
-
-# update the selected provider
-def update_selected_provider(new_provider):
-    config.set('model_providers', 'selected_provider', new_provider)
-    with open(config_path, 'w') as configfile:
-        config.write(configfile)
-
-
-# update the selected model
-def update_selected_model(new_model):
-    selected_provider = config.get('model_providers', 'selected_provider')
-    model_section = f"{selected_provider}_llm_models"
-    config.set(model_section, 'selected_model', new_model)
-    with open(config_path, 'w') as configfile:
-        config.write(configfile)
-
-
-# get the provider and the model name
-def get_selected_provider_and_model():
-    selected_provider = config.get('model_providers', 'selected_provider')
-    model_section = f"{selected_provider}_llm_models"
-    selected_model = config.get(model_section, 'selected_model')
-    return selected_provider, selected_model
-
-
-# get the provider and the model name
-def get_embedding_selected_provider_and_model():
-    eb_selected_provider = config.get('embedding_model_providers', 'selected_provider')
-    eb_model_section = f"{eb_selected_provider}_embedding_models"
-    eb_selected_model = config.get(eb_model_section, 'selected_model')
-    return eb_selected_provider, eb_selected_model
-
-
-# scan the the repo name file
-def scan_vectorstore_for_repos():
-    # define repo_info.json path
-    repo_info_path = os.path.join(sessions_dir, 'repo_info.json')
-
-    # load repo info from repo_info.json
-    try:
-        if os.path.exists(repo_info_path):
-            with open(repo_info_path, 'r') as file:
-                data = json.load(file)
-                # get the repo list and return
-                return [repo['name'] for repo in data.get('repos', [])]
-        else:
-            print(f"{repo_info_path} does not exist.")
-            return []
-    except json.JSONDecodeError as e:
-        print(f"Error reading {repo_info_path}: {e}")
-        return []
-
-
-# remove the repo name and store path from json
-def remove_repo_from_json(repo_name):
-    repo_info_path = os.path.join(sessions_dir, 'repo_info.json')
-    
-    # load repo_info.json
-    try:
-        if os.path.exists(repo_info_path):
-            with open(repo_info_path, 'r') as file:
-                data = json.load(file)
-            
-            # check and remove
-            repos = data.get('repos', [])
-            repos = [repo for repo in repos if repo['name'] != repo_name]
-            
-            # update
-            data['repos'] = repos
-            
-            # persistent the update
-            with open(repo_info_path, 'w') as file:
-                json.dump(data, file, indent=4)
-                
-            print(f"Repository {repo_name} has been removed from {repo_info_path}.")
-        else:
-            print(f"{repo_info_path} does not exist.")
-    except json.JSONDecodeError as e:
-        print(f"Error reading or writing {repo_info_path}: {e}")
-
-
-# save the chat history
-def save_session(session, repo_name):
-    os.makedirs(sessions_dir, exist_ok=True) 
-    session_file_path = os.path.join(sessions_dir, f'{repo_name}.json')
-    with open(session_file_path, 'w') as f:
-        json.dump(session, f)
-
-
-# load the chat history
-def load_session(repo_name):
-    session_file_path = os.path.join(sessions_dir, f'{repo_name}.json')
-    try:
-        with open(session_file_path, 'r') as f:
-            return json.load(f)
-    except FileNotFoundError:
-        return []  
-
-
-# update the repo and repo url mapping
-def update_repo_urls(repo_name, repo_url=None, action="add"):
-    os.makedirs(sessions_dir, exist_ok=True)
-    repo_urls_path = os.path.join(sessions_dir, 'repo_urls.json')
-    # load repo_urls
-    try:
-        if os.path.exists(repo_urls_path):
-            with open(repo_urls_path, "r") as file:
-                repo_urls = json.load(file)
-        else:
-            repo_urls = {}
-    except json.JSONDecodeError:
-        repo_urls = {}
-
-    # update repo_urls
-    if action == "add" and repo_url is not None:
-        # add when update
-        repo_urls[repo_name] = repo_url
-    elif action == "delete":
-        # remove it
-        repo_urls.pop(repo_name, None)
-
-    # save
-    with open(repo_urls_path, "w") as file:
-        json.dump(repo_urls, file)
-
-
-# load the repo and url mapping
-def load_repo_urls():
-    repo_urls_path = os.path.join(sessions_dir, f'repo_urls.json')
-    try:
-        with open(repo_urls_path, "r") as file:
-            return json.load(file)
-    except FileNotFoundError:
-        return {}  
-
 
 # remove the directories for the download/upload projects
 def remove_directory(dir_path):
@@ -206,7 +70,6 @@ def documents_to_string(documents):
 cache = TTLCache(maxsize=100, ttl=300)
 
 class DataHandler:
-    # def __init__(self, git_url) -> None:
     def __init__(self, git_url, chat_model, embedding_model) -> None:
         self.git_url = git_url
         last_part = git_url.split('/')[-1]
@@ -236,9 +99,6 @@ class DataHandler:
     # download or upload the project
     def git_clone_repo(self):
         url_parts = urlparse(self.git_url)
-
-        # Update the URL at the start of the function as required.
-        update_repo_urls(self.repo_name, self.git_url if self.git_url else self.repo_name)
 
         # upload situation
         if not url_parts.scheme:
@@ -297,37 +157,6 @@ class DataHandler:
         text_splitter = CharacterTextSplitter(chunk_size=int(chunk_size), chunk_overlap=int(chunk_overlap))
         self.texts = text_splitter.split_documents(self.docs)
 
-    # save the repo name and path into json
-    def save_repo_info_to_json(self):
-        os.makedirs(sessions_dir, exist_ok=True)
-        json_file = os.path.join(sessions_dir, 'repo_info.json') 
-
-        info = {
-            'repos': []
-        }
-        # load the repo info
-        try:
-            if os.path.exists(json_file):
-                with open(json_file, 'r') as file:
-                    info = json.load(file)
-        except json.JSONDecodeError as e:
-            print(f"Error reading {json_file}: {e}")
-        
-        # check whether in the list
-        if not any(repo['name'] == self.repo_name for repo in info['repos']):
-            # update the info
-            info['repos'].append({
-                'name': self.repo_name,
-                'path': self.db_dir
-            })
-            # save
-            try:
-                with open(json_file, 'w') as file:
-                    json.dump(info, file, indent=4)
-                print(f"Repository info saved to {json_file}.")
-            except Exception as e:
-                print(f"Error writing to {json_file}: {e}")
-
     # store the all file chunk into chromadb
     def store_chroma(self):  
         if not os.path.exists(self.db_dir):
@@ -353,9 +182,6 @@ class DataHandler:
         self.retriever = self.db.as_retriever()
         self.retriever.search_kwargs['k'] = 3
         self.retriever.search_type = 'similarity'
-
-        # save the repo name
-        self.save_repo_info_to_json()
 
     # create a chain, send the message into llm and ouput the answer
     @cached(cache)
