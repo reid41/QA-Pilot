@@ -185,10 +185,16 @@ def chat():
         data_handler = DataHandler(current_repo, chat_model, embedding_model)
         data_handler.load_into_db()
         rsd = False
+        rr = False
+        # return source documents
         if user_message.startswith('rsd:'):
             user_message = user_message[4:].strip()
             rsd = True
-        bot_response = data_handler.retrieval_qa(user_message, rsd=rsd)
+        # use reranker
+        elif user_message.startswith('rr:'):
+            user_message = user_message[3:].strip()
+            rr = True
+        bot_response = data_handler.retrieval_qa(user_message, rsd=rsd, rr=rr)
         
 
         # Save user message and bot response to the session table
