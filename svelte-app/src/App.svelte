@@ -425,6 +425,7 @@
             <Chat {currentRepo} bind:messages={messages} bind:sessionId={sessions[currentSessionIndex].id} sessionName={sessions[currentSessionIndex].name} />
         {:else}
             <div style="color: white; font-size: 23px; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%;">
+                <img src="/qa-pilot1.png" alt="Placeholder Image" style="width: 200px; height: auto; margin-bottom: 20px;">
                 <p>1. Please check your config with "Edit QA-Pilot Settings" button.</p>
                 <p>2. Click "New Source Button" to input the github URL.</p>
             </div>
