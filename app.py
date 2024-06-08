@@ -1,5 +1,7 @@
-from flask import Flask, jsonify, request, render_template
-from flask_cors import CORS
+from fastapi import FastAPI, Request, HTTPException
+from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.templating import Jinja2Templates
 import configparser
 import os
 from dotenv import load_dotenv, set_key
@@ -17,12 +19,21 @@ from qa_model_apis import (
     get_embedding_model,
 )
 
-app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": "*"}})
+app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 config_path = os.path.join('config', 'config.ini')
 config = configparser.ConfigParser()
 config.read(config_path)
+
+templates = Jinja2Templates(directory="templates")
 
 DB_NAME = config['database']['db_name']
 DB_USER = config['database']['db_user']
@@ -30,7 +41,7 @@ DB_PASSWORD = config['database']['db_password']
 DB_HOST = config['database']['db_host']
 DB_PORT = config['database']['db_port']
 
-# for analysze code
+# for analyse code
 current_session = None
 
 current_model_info = {
@@ -86,7 +97,6 @@ def load_models_if_needed():
         current_model_info["embedding_model"] = get_embedding_model(eb_selected_provider, eb_selected_model, model_kwargs, encode_kwargs)
         print(f"Loaded new models: provider={selected_provider}, model={selected_model}")
 
-
 def create_message_table(session_id):
     conn = psycopg2.connect(
         dbname=DB_NAME,
@@ -113,15 +123,15 @@ def load_config():
     config.read(config_path)
     return config
 
-@app.route('/get_config', methods=['GET'])
-def get_config():
+@app.get('/get_config')
+async def get_config():
     config = load_config()
     config_dict = {section: dict(config.items(section)) for section in config.sections()}
-    return jsonify(config_dict)
+    return JSONResponse(content=config_dict)
 
-@app.route('/save_config', methods=['POST'])
-def save_config():
-    new_config = request.json
+@app.post('/save_config')
+async def save_config(request: Request):
+    new_config = await request.json()
     config = load_config()
     for section, section_values in new_config.items():
         if not config.has_section(section):
@@ -130,32 +140,33 @@ def save_config():
             config.set(section, key, value)
     with open(config_path, 'w') as configfile:
         config.write(configfile)
-    return jsonify({"message": "Configuration saved successfully!"})
+    return JSONResponse(content={"message": "Configuration saved successfully!"})
 
-@app.route('/update_provider', methods=['POST'])
-def update_provider():
-    data = request.json
+@app.post('/update_provider')
+async def update_provider(request: Request):
+    data = await request.json()
     selected_provider = data.get('selected_provider')
     config.set('model_providers', 'selected_provider', selected_provider)
     with open(config_path, 'w') as configfile:
         config.write(configfile)
-    return jsonify({"message": "Provider updated successfully!"})
+    return JSONResponse(content={"message": "Provider updated successfully!"})
 
-@app.route('/update_model', methods=['POST'])
-def update_model():
-    data = request.json
+@app.post('/update_model')
+async def update_model(request: Request):
+    data = await request.json()
     selected_provider = data.get('selected_provider')
     selected_model = data.get('selected_model')
     config.set(f'{selected_provider}_llm_models', 'selected_model', selected_model)
     with open(config_path, 'w') as configfile:
         config.write(configfile)
-    return jsonify({"message": "Model updated successfully!"})
+    return JSONResponse(content={"message": "Model updated successfully!"})
 
-@app.route('/load_repo', methods=['POST'])
-def load_repo():
-    git_url = request.json.get('git_url')
+@app.post('/load_repo')
+async def load_repo(request: Request):
+    data = await request.json()
+    git_url = data.get('git_url')
     if not git_url:
-        return jsonify({"error": "Git URL is required"}), 400
+        raise HTTPException(status_code=400, detail="Git URL is required")
 
     load_models_if_needed()
     chat_model = current_model_info["chat_model"]
@@ -164,24 +175,24 @@ def load_repo():
     try:
         data_handler.git_clone_repo()
         data_handler.load_into_db()
-        return jsonify({"message": f"Repository {git_url} loaded successfully!"})
+        return JSONResponse(content={"message": f"Repository {git_url} loaded successfully!"})
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        raise HTTPException(status_code=500, detail=str(e))
 
-@app.route('/chat', methods=['POST'])
-def chat():
+@app.post('/chat')
+async def chat(request: Request):
+    data = await request.json()
     load_models_if_needed()
     chat_model = current_model_info["chat_model"]
     embedding_model = current_model_info["embedding_model"]
 
-    user_message = request.json.get('message')
-    current_repo = request.json.get('current_repo')
-    session_id = request.json.get('session_id')
+    user_message = data.get('message')
+    current_repo = data.get('current_repo')
+    session_id = data.get('session_id')
     if not user_message or not current_repo or not session_id:
-        return jsonify({"error": "Message, current_repo and session_id are required"}), 400
+        raise HTTPException(status_code=400, detail="Message, current_repo and session_id are required")
 
     try:
-        # data_handler = DataHandler(current_repo)
         data_handler = DataHandler(current_repo, chat_model, embedding_model)
         data_handler.load_into_db()
         rsd = False
@@ -192,10 +203,9 @@ def chat():
             rsd = True
         # use reranker
         elif user_message.startswith('rr:'):
-            user_message = user_message[3:].strip()
+            user_message = user_message[3:].trip()
             rr = True
         bot_response = data_handler.retrieval_qa(user_message, rsd=rsd, rr=rr)
-        
 
         # Save user message and bot response to the session table
         conn = psycopg2.connect(
@@ -212,12 +222,12 @@ def chat():
         conn.commit()
         conn.close()
 
-        return jsonify({"response": bot_response})
+        return JSONResponse(content={"response": bot_response})
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        raise HTTPException(status_code=500, detail=str(e))
 
-@app.route('/sessions', methods=['GET'])
-def get_sessions():
+@app.get('/sessions')
+async def get_sessions():
     conn = psycopg2.connect(
         dbname=DB_NAME,
         user=DB_USER,
@@ -230,11 +240,11 @@ def get_sessions():
     sessions = [{'id': row[0], 'name': row[1], 'url': row[2]} for row in cursor.fetchall()]
     conn.close()
     print(f"Fetched sessions from DB: {sessions}")
-    return jsonify(sessions)
+    return JSONResponse(content=sessions)
 
-@app.route('/sessions', methods=['POST'])
-def save_sessions():
-    sessions = request.json
+@app.post('/sessions')
+async def save_sessions(request: Request):
+    sessions = await request.json()
     print(f"Received sessions to save: {sessions}")
     conn = psycopg2.connect(
         dbname=DB_NAME,
@@ -251,10 +261,10 @@ def save_sessions():
     conn.commit()
     conn.close()
     print("Saved sessions to DB")
-    return jsonify({"message": "Sessions saved successfully!"})
+    return JSONResponse(content={"message": "Sessions saved successfully!"})
 
-@app.route('/messages/<int:session_id>', methods=['GET'])
-def get_messages(session_id):
+@app.get('/messages/{session_id}')
+async def get_messages(session_id: int):
     conn = psycopg2.connect(
         dbname=DB_NAME,
         user=DB_USER,
@@ -268,17 +278,16 @@ def get_messages(session_id):
     messages = [{'sender': row[0], 'text': row[1]} for row in cursor.fetchall()]
     conn.close()
     print(f"Fetched messages from session {session_id}")
-    return jsonify(messages)
+    return JSONResponse(content=messages)
 
-@app.route('/update_current_session', methods=['POST'])
-def update_current_session():
+@app.post('/update_current_session')
+async def update_current_session(request: Request):
     global current_session
-    current_session = request.json
-    return jsonify({"message": "Current session updated successfully!"})
+    current_session = await request.json()
+    return JSONResponse(content={"message": "Current session updated successfully!"})
 
-
-@app.route('/sessions/<int:session_id>', methods=['DELETE'])
-def delete_session(session_id):
+@app.delete('/sessions/{session_id}')
+async def delete_session(session_id: int):
     print(f"Deleting session with ID: {session_id}")
 
     conn = psycopg2.connect(
@@ -304,29 +313,28 @@ def delete_session(session_id):
         remove_project_path = os.path.join("projects", session_name)
         remove_directory(remove_project_path)
         print("Session deleted successfully")
-        return jsonify({"message": "Session deleted successfully!"})
+        return JSONResponse(content={"message": "Session deleted successfully!"})
     except Exception as e:
         print(f"Error deleting session: {e}")
-        return jsonify({"error": str(e)}), 500
+        raise HTTPException(status_code=500, detail=str(e))
     finally:
         conn.close()
 
-
 # api key handling functions
-@app.route('/check_api_key', methods=['POST'])
-def check_api_key():
-    data = request.json
+@app.post('/check_api_key')
+async def check_api_key(request: Request):
+    data = await request.json()
     provider = data.get('provider')
     key_var = f"{provider.upper()}_API_KEY"
     
     load_dotenv()
     api_key = os.getenv(key_var)
     
-    return jsonify({'exists': bool(api_key)})
+    return JSONResponse(content={'exists': bool(api_key)})
 
-@app.route('/save_api_key', methods=['POST'])
-def save_api_key():
-    data = request.json
+@app.post('/save_api_key')
+async def save_api_key(request: Request):
+    data = await request.json()
     provider = data.get('provider')
     api_key = data.get('api_key')
     key_var = f"{provider.upper()}_API_KEY"
@@ -335,13 +343,12 @@ def save_api_key():
     set_key(dotenv_path, key_var, api_key)
     load_dotenv()
     
-    return jsonify({'message': 'API Key saved successfully!'})
-   
+    return JSONResponse(content={'message': 'API Key saved successfully!'})
 
 #############################codegraph############################
-@app.route('/codegraph')
-def codegraph_home():
-    return render_template('index.html')
+@app.get('/codegraph')
+async def codegraph_home(request: Request):
+    return templates.TemplateResponse('index.html', {'request': request})
 
 def parse_python_code(filepath):
     """Parse Python code file, extract classes, methods, global functions, imported modules and their source code, and the call relationships."""
@@ -456,11 +463,10 @@ def read_current_repo_path():
         return os.path.join("projects", current_session['name'])
     return None
 
-@app.route('/data')
-def data():
-    filepath = request.args.get('filepath')
+@app.get('/data')
+async def data(filepath: str):
     code_data = parse_python_code(filepath)  # Ensure the path points to your Python code file
-    return jsonify(code_data)
+    return JSONResponse(content=code_data)
 
 def build_file_tree(directory):
     """Build the file tree for the given directory"""
@@ -485,25 +491,26 @@ def build_file_tree(directory):
         break  # Only traverse current directory, not recursively
     return file_tree
 
-@app.route('/directory')
-def directory():
+@app.get('/directory')
+async def directory():
     current_repo_path = read_current_repo_path()
     if current_repo_path is None:
-        return jsonify({'error': 'Repository path not set or not found'}), 404
+        raise HTTPException(status_code=404, detail="Repository path not set or not found")
     dir_tree = build_file_tree(current_repo_path)  # Ensure the path points to your code directory
-    return jsonify(dir_tree)
+    return JSONResponse(content=dir_tree)
 
-@app.route('/analyze', methods=['POST'])
-def analyze():
+@app.post('/analyze')
+async def analyze(request: Request):
+    data = await request.json()
     load_models_if_needed()
     chat_model = current_model_info["chat_model"]
     embedding_model = current_model_info["embedding_model"]
-    code = request.json.get('code', '')
+    code = data.get('code', '')
     # send the code to LLM
     data_handler = DataHandler(git_url='', chat_model=chat_model, embedding_model=embedding_model)
     code_analysis = data_handler.restrieval_qa_for_code(code)
-    return jsonify({'analysis': code_analysis})
-
+    return JSONResponse(content={'analysis': code_analysis})
 
 if __name__ == "__main__":
-    app.run(debug=True, port=5000)
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=5000, log_level="debug")
