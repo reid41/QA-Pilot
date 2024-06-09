@@ -203,7 +203,7 @@ async def chat(request: Request):
             rsd = True
         # use reranker
         elif user_message.startswith('rr:'):
-            user_message = user_message[3:].trip()
+            user_message = user_message[3:].strip()
             rr = True
         bot_response = data_handler.retrieval_qa(user_message, rsd=rsd, rr=rr)
 
