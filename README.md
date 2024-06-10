@@ -16,6 +16,7 @@ QA-Pilot is an interactive chat project that leverages online/local LLM for rapi
     * ollama
     * openai
     * mistralai
+    * localai
 
 
 ### Release
