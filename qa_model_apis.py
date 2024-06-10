@@ -7,19 +7,21 @@ import os
 import configparser
 from dotenv import load_dotenv
 from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
+from llama_index.llms.openai_like import OpenAILike
 
 # read from the config.ini
 config_path = os.path.join('config', 'config.ini')
 config = configparser.ConfigParser()
 config.read(config_path)
-base_url = config.get('ollama_llm_models', 'base_url')
+ollama_base_url = config.get('ollama_llm_models', 'base_url')
+localai_base_url = config.get('localai_llm_models', 'base_url')
 
 
 # get the chat model from config
-def get_chat_model(provider, model_name):    
+def get_chat_model(provider, model_name=''):    
     if provider == 'ollama':
         return ChatOllama(
-            base_url=base_url,
+            base_url=ollama_base_url,
             model=model_name,
             streaming=True,
             callbacks=[StreamingStdOutCallbackHandler()]
@@ -30,6 +32,14 @@ def get_chat_model(provider, model_name):
     elif provider == 'mistralai':
         load_dotenv()
         return ChatMistralAI(model_name=model_name)
+    elif provider == 'localai':
+        return OpenAILike(  
+            api_base=localai_base_url,  
+            api_key="qa_pilot",  
+            is_chat_model=True,  
+            context_window=32768,  
+            model=model_name
+        )
     else:
         raise ValueError(f"Unsupported model provider: {provider}")
     
