@@ -187,6 +187,9 @@ class DataHandler:
     # create a chain, send the message into llm and ouput the answer
     @cached(cache)
     def retrieval_qa(self, query, rsd=False, rr=False):
+        config = configparser.ConfigParser()
+        config.read(config_path)
+        the_selected_provider = config.get('model_providers', 'selected_provider')
         chat_history = list(self.ChatQueue.queue)
         qa_template = """I want you to act as a very senior code developer. 
         and very familar with github/gitlab community,I will provide you the code project,
@@ -197,52 +200,87 @@ class DataHandler:
             SystemMessagePromptTemplate.from_template(qa_template), 
             HumanMessagePromptTemplate.from_template("{question}")])
         
-        # add reranker
-        if rr:
-            compressor = FlashrankRerank()
-            compression_retriever = ContextualCompressionRetriever(
-                base_compressor=compressor, base_retriever=self.retriever
-            )
-            the_retriever = compression_retriever
-        else:
-            the_retriever = self.retriever
+        if the_selected_provider != 'localai':
+            # add reranker
+            if rr:
+                compressor = FlashrankRerank()
+                compression_retriever = ContextualCompressionRetriever(
+                    base_compressor=compressor, base_retriever=self.retriever
+                )
+                the_retriever = compression_retriever
+            else:
+                the_retriever = self.retriever
 
-                
-        qa = ConversationalRetrievalChain.from_llm(
-            self.model, 
-            chain_type="stuff", 
-            retriever=the_retriever, 
-            condense_question_llm = self.model,
-            return_source_documents=True,
-            combine_docs_chain_kwargs={"prompt": custom_prompt})
+                    
+            qa = ConversationalRetrievalChain.from_llm(
+                self.model, 
+                chain_type="stuff", 
+                retriever=the_retriever, 
+                condense_question_llm = self.model,
+                return_source_documents=True,
+                combine_docs_chain_kwargs={"prompt": custom_prompt})
+            
+            result = qa({"question": query, "chat_history": chat_history})
+
+            self.update_chat_queue((query, result["answer"]))
+
+            # add the search source documents
+            docs_strings = document_to_string(result['source_documents'][0])
+            # docs_strings = documents_to_string(result['source_documents'])
+
+            if rsd:
+                return docs_strings
+            else:
+                return result['answer']
+            
+        elif the_selected_provider == 'localai':
+            docs = self.retriever.get_relevant_documents(query)
+
+            ds2s = documents_to_string(docs)
+
+            the_question = """   
+            the question: {question}"""  
+
+            # build the prompt with string
+            combine_strings = qa_template + the_question
+            prompt = combine_strings.format(context=ds2s, question=query)
+            result = self.model.complete(prompt)
+            self.update_chat_queue((query, result.text))
+            if rsd:
+                return ds2s
+            return result.text
         
-        result = qa({"question": query, "chat_history": chat_history})
-
-        self.update_chat_queue((query, result["answer"]))
-
-        # add the search source documents
-        docs_strings = document_to_string(result['source_documents'][0])
-        # docs_strings = documents_to_string(result['source_documents'])
-
-        if rsd:
-            return docs_strings
         else:
-            return result['answer']
+            return "Wrong provider!!!"
         
     @cached(cache)
     def restrieval_qa_for_code(self, query):
-        from datetime import datetime
+        config = configparser.ConfigParser()
+        config.read(config_path)
+        the_selected_provider = config.get('model_providers', 'selected_provider')
+        # from datetime import datetime
         code_template = """I want you to act as a Senior Python developer. 
         I will provide you the code project, you provide detailed exaplanation. 
         Human: {input}
         History: {history}
         AI:"""
-        PROMPT = PromptTemplate(input_variables=["input", "history"], template=code_template)
-        print("-->", datetime.now())
-        conversation = ConversationChain(
-            prompt=PROMPT,
-            llm=self.model,
-        )
-        print("-->", datetime.now())
-        code_anaylsis = conversation.predict(input=query)
-        return code_anaylsis
+        code_template_localai = """I want you to act as a Senior Python developer. 
+        I will provide you the code project, you provide detailed exaplanation. 
+        Human: {input}
+        AI:"""
+        if the_selected_provider != 'localai':
+            PROMPT = PromptTemplate(input_variables=["input", "history"], template=code_template)
+            # print("-->", datetime.now())
+            conversation = ConversationChain(
+                prompt=PROMPT,
+                llm=self.model,
+            )
+            # print("-->", datetime.now())
+            code_anaylsis = conversation.predict(input=query)
+            return code_anaylsis
+        elif the_selected_provider == 'localai':
+            prompt = code_template_localai.format(input=query)
+            result = self.model.complete(prompt)
+            return result.text
+        else:
+            return "Wrong provider!!!"

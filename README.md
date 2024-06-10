@@ -20,6 +20,8 @@ QA-Pilot is an interactive chat project that leverages online/local LLM for rapi
 
 ### Release
 
+* 2024-06-10 Convert `flask` to `fastapi` and add `localai` API support
+
 * 2024-06-07 Add `rr:` option and use `FlashRank` for the search 
 
 * 2024-06-05 Upgrade `langchain` to `v0.2` and add `ollama embeddings`.
@@ -66,7 +68,9 @@ pip install -r requirements.txt
 4. Install the pytorch with cuda [pytorch](https://pytorch.org/get-started/locally/)
 
 
-5. Setup [ollama website](https://ollama.com/) and [ollama github](https://github.com/ollama/ollama) to manage the local LLM model. 
+5. Setup providers
+
+* For setup [ollama website](https://ollama.com/) and [ollama github](https://github.com/ollama/ollama) to manage the local LLM. 
 e.g.
 
 ```shell
@@ -75,9 +79,23 @@ ollama pull <model_name>
 ollama list
 ```
 
-6. Setup [OpenAI](https://platform.openai.com/docs/overview) or [MistralAI](https://docs.mistral.ai/), add the key in `.env`
+* For setup [localAI](https://localai.io/) and [LocalAI github](https://github.com/mudler/LocalAI) to manage the local LLM, set the localAI `base_url` in config/config.ini.
+e.g.
+```shell
+docker run -p 8080:8080 --name local-ai -ti localai/localai:latest-aio-cpu
+# Do you have a Nvidia GPUs? Use this instead
+# CUDA 11
+# docker run -p 8080:8080 --gpus all --name local-ai -ti localai/localai:latest-aio-gpu-nvidia-cuda-11
+# CUDA 12
+# docker run -p 8080:8080 --gpus all --name local-ai -ti localai/localai:latest-aio-gpu-nvidia-cuda-12
 
-7. Set the related parameters in `config/config.ini`, e.g. `model provider`, `model`, `variable`, `Ollama API url` and setup the [Postgresql](https://www.postgresql.org/download/) env
+# quick check the service with http://<localAI host>:8080/
+# quick check the models with http://<localAI host>:8080/models/
+```
+
+* For setup [OpenAI](https://platform.openai.com/docs/overview) or [MistralAI](https://docs.mistral.ai/), add the key in `.env`
+
+6. Set the related parameters in `config/config.ini`, e.g. `model provider`, `model`, `variable`, `Ollama API url` and setup the [Postgresql](https://www.postgresql.org/download/) env
 ```shell
 # create the db, e.g.
 CREATE DATABASE qa_pilot_chatsession_db;
@@ -98,7 +116,7 @@ db_port = 5432
 python check_postgresql_connection.py
 ```
 
-8. Download and install [node.js](https://nodejs.org/en/download/package-manager) and Set up the fontend env in one terminal
+7. Download and install [node.js](https://nodejs.org/en/download/package-manager) and Set up the fontend env in one terminal
 ```shell
 # make sure the backend server host ip is correct, localhost is by default
 cat svelte-app/src/config.js
@@ -111,7 +129,7 @@ npm install
 npm run dev
 ```
 
-9. Run the backend QA-Pilot in another terminal:
+8. Run the backend QA-Pilot in another terminal:
 
 ```shell
 python qa_pilot_run.py
