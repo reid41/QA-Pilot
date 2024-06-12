@@ -156,6 +156,7 @@
         <select bind:value={selectedProvider} on:change={checkApiKey}>
             <option value="openai">OpenAI</option>
             <option value="mistral">Mistral</option>
+            <option value="zhipuai">ZhipuAI</option>
         </select>
         <input type="text" bind:value={apiKey} placeholder="Enter API Key" />
         {#if successMessage}
@@ -164,10 +165,6 @@
         {#if errorMessage}
             <p style="color: red;">{errorMessage}</p>
         {/if}
-        <!-- <div class="modal-buttons">
-            <button on:click={() => testApiKey(false)}>Test from Here</button>
-            <button on:click={() => testApiKey(true)}>Test from Env</button>
-        </div> -->
         <div class="modal-buttons">
             <button on:click={handleSave}>Submit</button>
             <button on:click={handleCancel}>Cancel</button>
