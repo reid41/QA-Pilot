@@ -17,15 +17,18 @@ QA-Pilot is an interactive chat project that leverages online/local LLM for rapi
     * openai
     * mistralai
     * localai
+    * zhipuai
 
 
 ### Release
+
+* 2024-06-12  add `zhipuai` API support
 
 * 2024-06-10 Convert `flask` to `fastapi` and add `localai` API support
 
 * 2024-06-07 Add `rr:` option and use `FlashRank` for the search 
 
-* 2024-06-05 Upgrade `langchain` to `v0.2` and add `ollama embeddings`.
+* 2024-06-05 Upgrade `langchain` to `v0.2` and add `ollama embeddings`
 
 * 2024-05-26 Release v2.0.1: Refactoring to replace `Streamlit` fontend with `Svelte` to improve the performance.
 
@@ -94,7 +97,10 @@ docker run -p 8080:8080 --name local-ai -ti localai/localai:latest-aio-cpu
 # quick check the models with http://<localAI host>:8080/models/
 ```
 
-* For setup [OpenAI](https://platform.openai.com/docs/overview) or [MistralAI](https://docs.mistral.ai/), add the key in `.env`
+* For setup [OpenAI](https://platform.openai.com/docs/overview) or [MistralAI](https://docs.mistral.ai/) or [ZhipuAI](https://open.bigmodel.cn/), add the key in `.env`
+  - OPENAI_API_KEY='<openai_api_key,>'
+  - MISTRAL_API_KEY='<mistralai_api_key>'
+  - ZHIPUAI_API_KEY='<zhipuai_api_key,>'
 
 6. Set the related parameters in `config/config.ini`, e.g. `model provider`, `model`, `variable`, `Ollama API url` and setup the [Postgresql](https://www.postgresql.org/download/) env
 ```shell

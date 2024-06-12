@@ -8,6 +8,7 @@ import configparser
 from dotenv import load_dotenv
 from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
 from llama_index.llms.openai_like import OpenAILike
+from langchain_community.chat_models import ChatZhipuAI
 
 # read from the config.ini
 config_path = os.path.join('config', 'config.ini')
@@ -39,6 +40,12 @@ def get_chat_model(provider, model_name=''):
             is_chat_model=True,  
             context_window=32768,  
             model=model_name
+        )
+    elif provider == 'zhipuai':
+        load_dotenv()
+        return ChatZhipuAI(
+            model=model_name,
+            temperature=0.5,
         )
     else:
         raise ValueError(f"Unsupported model provider: {provider}")
