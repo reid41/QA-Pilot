@@ -23,6 +23,8 @@ QA-Pilot is an interactive chat project that leverages online/local LLM for rapi
 
 ### Release
 
+* 2024-06-15  add `anthropic` API support, refactor some functions, and fix chat show messages
+
 * 2024-06-12  add `zhipuai` API support
 
 * 2024-06-10 Convert `flask` to `fastapi` and add `localai` API support

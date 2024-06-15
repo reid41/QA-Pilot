@@ -1,5 +1,5 @@
 <script>
-    import { onMount } from 'svelte';
+    import { onMount, afterUpdate } from 'svelte';
     import { marked } from 'marked';
     export let currentRepo;
     export let messages = [];
@@ -9,6 +9,25 @@
 
     let chatInput = '';
     let isLoading = false;
+
+    // to get container DOM element
+    let messagesContainer;
+
+    onMount(() => {
+        // scroll to bottom when initial
+        scrollToBottom();
+    });
+
+    afterUpdate(() => {
+        // scroll to bottom when update
+        scrollToBottom();
+    });
+
+    function scrollToBottom() {
+        if (messagesContainer) {
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+    }
 
     async function sendMessage() {
         if (chatInput.trim() === '') return;
@@ -172,7 +191,7 @@
 </style>
 
 <div class="chat-container">
-    <div class="chat-messages">
+    <div class="chat-messages" bind:this={messagesContainer}>
         {#each messages as message}
             <div class="chat-message {message.sender === 'You' ? 'user' : message.sender === 'loader' ? 'loader' : 'bot'}">
                 {#if message.sender === 'loader'}
