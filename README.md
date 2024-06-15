@@ -18,6 +18,7 @@ QA-Pilot is an interactive chat project that leverages online/local LLM for rapi
     * mistralai
     * localai
     * zhipuai
+    * anthropic
 
 
 ### Release
@@ -97,10 +98,11 @@ docker run -p 8080:8080 --name local-ai -ti localai/localai:latest-aio-cpu
 # quick check the models with http://<localAI host>:8080/models/
 ```
 
-* For setup [OpenAI](https://platform.openai.com/docs/overview) or [MistralAI](https://docs.mistral.ai/) or [ZhipuAI](https://open.bigmodel.cn/), add the key in `.env`
+* For setup [OpenAI](https://platform.openai.com/docs/overview) or [MistralAI](https://docs.mistral.ai/) or [ZhipuAI](https://open.bigmodel.cn/) or [Anthropic](https://console.anthropic.com/settings/keys), add the key in `.env`
   - OPENAI_API_KEY='<openai_api_key,>'
   - MISTRAL_API_KEY='<mistralai_api_key>'
   - ZHIPUAI_API_KEY='<zhipuai_api_key,>'
+  - ANTHROPIC_API_KEY='<anthropic_api_key>'
 
 6. Set the related parameters in `config/config.ini`, e.g. `model provider`, `model`, `variable`, `Ollama API url` and setup the [Postgresql](https://www.postgresql.org/download/) env
 ```shell

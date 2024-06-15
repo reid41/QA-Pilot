@@ -157,6 +157,7 @@
             <option value="openai">OpenAI</option>
             <option value="mistral">Mistral</option>
             <option value="zhipuai">ZhipuAI</option>
+            <option value="anthropic">Anthropic</option>
         </select>
         <input type="text" bind:value={apiKey} placeholder="Enter API Key" />
         {#if successMessage}
