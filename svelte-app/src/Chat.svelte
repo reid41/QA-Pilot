@@ -4,22 +4,18 @@
     export let currentRepo;
     export let messages = [];
     export let sessionId;
-    export let sessionName; // 添加这一行
+    export let sessionName;
     import { API_BASE_URL } from './config.js';
 
     let chatInput = '';
     let isLoading = false;
-
-    // to get container DOM element
     let messagesContainer;
 
     onMount(() => {
-        // scroll to bottom when initial
         scrollToBottom();
     });
 
     afterUpdate(() => {
-        // scroll to bottom when update
         scrollToBottom();
     });
 
@@ -52,7 +48,7 @@
                 const data = await response.json();
                 messages = messages.filter(message => message.sender !== 'loader');
                 messages = [...messages, { sender: 'QA-Pilot', text: data.response }];
-                await saveMessages(); // Save sessions after each message
+                await saveMessages();
             } else {
                 throw new Error('Failed to send message');
             }
@@ -70,13 +66,52 @@
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify([{ id: sessionId, name: sessionName, url: currentRepo, messages: JSON.stringify(messages) }]) // 修改这一行
+            body: JSON.stringify([{ id: sessionId, name: sessionName, url: currentRepo, messages: JSON.stringify(messages) }])
         });
     }
 
     function handleKeyPress(event) {
         if (event.key === 'Enter') {
             sendMessage();
+        }
+    }
+
+    async function copyToClipboard(text) {
+        if (navigator.clipboard) {
+            try {
+                await navigator.clipboard.writeText(text);
+                return true;
+            } catch (error) {
+                console.error('Failed to copy with clipboard API: ', error);
+            }
+        }
+        // Fallback for older browsers
+        const textArea = document.createElement('textarea');
+        textArea.value = text;
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        try {
+            const successful = document.execCommand('copy');
+            return successful;
+        } catch (error) {
+            console.error('Failed to copy with execCommand: ', error);
+            return false;
+        } finally {
+            document.body.removeChild(textArea);
+        }
+    }
+
+    async function handleCopyClick(event, message) {
+        const button = event.currentTarget;
+        const textToCopy = message.text || "";
+        const success = await copyToClipboard(textToCopy);
+
+        if (success) {
+            button.innerHTML = 'Copied';
+            setTimeout(() => {
+                button.innerHTML = 'Copy';
+            }, 2000);
         }
     }
 </script>
@@ -103,6 +138,7 @@
         padding: 10px;
         border-radius: 5px;
         font-size: 16px;
+        position: relative;
     }
 
     .chat-message.user {
@@ -140,6 +176,20 @@
     @keyframes spin {
         0% { transform: rotate(0deg); }
         100% { transform: rotate(360deg); }
+    }
+
+    .copy-button-container {
+        display: flex;
+        justify-content: flex-start;
+        margin-top: 5px;
+    }
+
+    .copy-button {
+        background: none;
+        border: none;
+        color: #fff;
+        cursor: pointer;
+        font-size: 16px;
     }
 
     .chat-input-container {
@@ -201,6 +251,11 @@
                 {:else}
                     <div class="sender">{message.sender}</div>
                     <div>{@html marked(message.text || '')}</div>
+                    {#if message.sender !== 'You'}
+                        <div class="copy-button-container">
+                            <button class="copy-button" on:click={(event) => handleCopyClick(event, message)}>Copy</button>
+                        </div>
+                    {/if}
                 {/if}
             </div>
         {/each}
