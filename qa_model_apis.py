@@ -10,6 +10,8 @@ from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
 from llama_index.llms.openai_like import OpenAILike
 from langchain_community.chat_models import ChatZhipuAI
 from langchain_anthropic import ChatAnthropic
+import multiprocessing
+from langchain_community.chat_models import ChatLlamaCpp
 
 # read from the config.ini
 config_path = os.path.join('config', 'config.ini')
@@ -51,7 +53,21 @@ def get_chat_model(provider, model_name=''):
     elif provider == 'anthropic':
         load_dotenv()
         return ChatAnthropic(
-            model='claude-3-opus-20240229'
+            model=model_name
+        )
+    elif provider == 'llamacpp':
+        local_model = os.path.join("llamacpp_models", model_name)
+        return ChatLlamaCpp(
+            temperature=0.5,
+            model_path=local_model,
+            n_ctx=10000,
+            n_gpu_layers=8,
+            n_batch=300,  # Should be between 1 and n_ctx, consider the amount of VRAM in your GPU.
+            max_tokens=512,
+            n_threads=multiprocessing.cpu_count() - 1,
+            repeat_penalty=1.5,
+            top_p=0.5,
+            verbose=True,
         )
     else:
         raise ValueError(f"Unsupported model provider: {provider}")
