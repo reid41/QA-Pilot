@@ -27,6 +27,7 @@
     let sessionToDeleteName = '';
     let searchKeyword = '';
     let filteredSessions = [];
+    let showSettings = false; // control the Settings hide or show
 
     async function fetchConfig() {
         try {
@@ -295,6 +296,10 @@
         }
     }
 
+    function toggleSettings() {
+        showSettings = !showSettings;
+    }
+
     onMount(async () => {
         await loadSessions();
         await fetchConfig();
@@ -338,6 +343,7 @@
         font-size: 16px;
         margin: 5px 0;
         cursor: pointer;
+        position: relative;
     }
 
     .sidebar button:hover {
@@ -385,6 +391,28 @@
     .delete-button:hover {
         color: red;
     }
+
+    .submenu {
+        display: none;
+        flex-direction: column;
+        margin-left: 10px;
+    }
+
+    .submenu.visible {
+        display: flex;
+    }
+
+    .arrow {
+        position: absolute;
+        right: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 12px;
+    }
+
+    .rotate {
+        transform: translateY(-50%) rotate(90deg);
+    }
 </style>
 
 <div class="container">
@@ -404,8 +432,16 @@
         </select>
 
         <button on:click={openCodeGraph}>Open Code Graph</button>
-        <button on:click={toggleConfigEditor}>Edit QA-Pilot Settings</button>
-        <button on:click={openApiKeyModal}>AI Vendor API Key</button>
+
+        <button on:click={toggleSettings}>
+            Settings
+            <span class="arrow {showSettings ? 'rotate' : ''}">&#9654;</span>
+        </button>
+        <div class="submenu {showSettings ? 'visible' : ''}">
+            <button on:click={toggleConfigEditor}>Edit QA-Pilot Settings</button>
+            <button on:click={openApiKeyModal}>AI Vendor API Key</button>
+        </div>
+
         <button on:click={openNewSourceModal}>New Source Button</button>
 
         <input type="text" placeholder="Search sessions" on:input={handleSearch} bind:value={searchKeyword} />
