@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request, HTTPException
+from fastapi import FastAPI, Request, HTTPException, UploadFile, File, Form
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.templating import Jinja2Templates
@@ -354,10 +354,60 @@ async def save_api_key(request: Request):
     
     return JSONResponse(content={'message': 'API Key saved successfully!'})
 
+
+# hanlde llamacpp models(list/upload/delete)
+@app.get('/llamacpp_models')
+async def list_llamacpp_models():
+    upload_dir = "llamacpp_models"
+    if not os.path.exists(upload_dir):
+        return JSONResponse(content=[])
+    models = os.listdir(upload_dir)
+    return JSONResponse(content=models)
+
+
+@app.post('/llamacpp_models', status_code=201)
+async def upload_llamacpp_model(file: UploadFile = File(...), chunk: int = Form(...), totalChunks: int = Form(...)):
+    try:
+        upload_dir = "llamacpp_models"
+        os.makedirs(upload_dir, exist_ok=True)
+        chunk_dir = os.path.join(upload_dir, "chunks")
+        os.makedirs(chunk_dir, exist_ok=True)
+        chunk_file_path = os.path.join(chunk_dir, f"{file.filename}.part{chunk}")
+
+        with open(chunk_file_path, "wb") as f:
+            f.write(await file.read())
+
+        # Check if all chunks are uploaded
+        if len(os.listdir(chunk_dir)) == totalChunks:
+            final_file_path = os.path.join(upload_dir, file.filename)
+            with open(final_file_path, "wb") as final_file:
+                for i in range(totalChunks):
+                    chunk_file_path = os.path.join(chunk_dir, f"{file.filename}.part{i}")
+                    with open(chunk_file_path, "rb") as chunk_file:
+                        final_file.write(chunk_file.read())
+                    os.remove(chunk_file_path)
+            os.rmdir(chunk_dir)  # Remove the chunks directory
+
+        return JSONResponse(content={"message": "Chunk uploaded successfully!"})
+    except Exception as e:
+        print(f"Error uploading model: {e}")
+        raise HTTPException(status_code=500, detail="Failed to upload chunk")
+    
+
+@app.delete('/llamacpp_models/{model_name}')
+async def delete_llamacpp_model(model_name: str):
+    file_path = os.path.join("llamacpp_models", model_name)
+    if os.path.exists(file_path):
+        os.remove(file_path)
+        return JSONResponse(content={"message": "Model deleted successfully!"})
+    else:
+        raise HTTPException(status_code=404, detail="Model not found")
+
 #############################codegraph############################
 @app.get('/codegraph')
 async def codegraph_home(request: Request):
     return templates.TemplateResponse('index.html', {'request': request})
+
 
 @app.get('/data')
 async def data(filepath: str):
@@ -386,4 +436,4 @@ async def analyze(request: Request):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=5003, log_level="debug")
+    uvicorn.run(app, host="0.0.0.0", port=5000, log_level="debug")

@@ -24,7 +24,7 @@ QA-Pilot is an interactive chat project that leverages online/local LLM for rapi
 
 ### Release
 
-* 2024-06-19  add `llamacpp` API support
+* 2024-06-19  add `llamacpp` API support, improve the `settings` list in the sidebar and add upload model function for `llamacpp`
 
 * 2024-06-15  add `anthropic` API support, refactor some functions, and fix chat show messages
 
@@ -104,7 +104,7 @@ docker run -p 8080:8080 --name local-ai -ti localai/localai:latest-aio-cpu
 ```
 
 * For setup llamacpp with [llama-cpp-python](https://github.com/abetlen/llama-cpp-python#windows-remarks)
-  - upload the model to `llamacpp_models` dir
+  - upload the model to `llamacpp_models` dir or upload from the `llamacpp models` under the `Settings`
   - set the model in `llamacpp_llm_models` section in `config/config.ini`
 
 * For setup [OpenAI](https://platform.openai.com/docs/overview) or [MistralAI](https://docs.mistral.ai/) or [ZhipuAI](https://open.bigmodel.cn/) or [Anthropic](https://console.anthropic.com/settings/keys), add the key in `.env`

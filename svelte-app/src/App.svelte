@@ -6,6 +6,7 @@
     import NewSourceModal from './NewSourceModal.svelte';
     import ApiKeyModal from './ApiKeyModal.svelte';
     import DeleteConfirmationModal from './DeleteConfirmationModal.svelte';
+    import LlamaCppModelsModal from './LlamaCppModelsModal.svelte';
     import { API_BASE_URL } from './config.js';
 
     let showConfigEditor = false;
@@ -28,6 +29,7 @@
     let searchKeyword = '';
     let filteredSessions = [];
     let showSettings = false; // control the Settings hide or show
+    let showLlamaCppModelsModal = false;
 
     async function fetchConfig() {
         try {
@@ -300,6 +302,14 @@
         showSettings = !showSettings;
     }
 
+    function openLlamaCppModelsModal() {
+        showLlamaCppModelsModal = true;
+    }
+
+    function closeLlamaCppModelsModal() {
+        showLlamaCppModelsModal = false;
+    }
+
     onMount(async () => {
         await loadSessions();
         await fetchConfig();
@@ -413,6 +423,16 @@
     .rotate {
         transform: translateY(-50%) rotate(90deg);
     }
+
+    .overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        z-index: 999;
+    }
 </style>
 
 <div class="container">
@@ -440,6 +460,7 @@
         <div class="submenu {showSettings ? 'visible' : ''}">
             <button on:click={toggleConfigEditor}>Edit QA-Pilot Settings</button>
             <button on:click={openApiKeyModal}>AI Vendor API Key</button>
+            <button on:click={openLlamaCppModelsModal}>llamacpp models</button>
         </div>
 
         <button on:click={openNewSourceModal}>New Source Button</button>
@@ -488,6 +509,12 @@
     <ApiKeyModal
         isOpen={showApiKeyModal}
         on:cancel={closeApiKeyModal} />
+{/if}
+
+{#if showLlamaCppModelsModal}
+    <LlamaCppModelsModal
+        isOpen={showLlamaCppModelsModal}
+        on:cancel={closeLlamaCppModelsModal} />
 {/if}
 
 {#if showDeleteModal}
