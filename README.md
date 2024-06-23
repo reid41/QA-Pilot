@@ -24,7 +24,7 @@ QA-Pilot is an interactive chat project that leverages online/local LLM for rapi
 
 ### Release
 
-* 2024-06-19  add `llamacpp` API support, improve the `settings` list in the sidebar and add upload model function for `llamacpp`
+* 2024-06-19  add `llamacpp` API support, improve the `settings` list in the sidebar and add upload model function for `llamacpp`, add `prompt templates` setting
 
 * 2024-06-15  add `anthropic` API support, refactor some functions, and fix chat show messages
 

@@ -403,6 +403,60 @@ async def delete_llamacpp_model(model_name: str):
     else:
         raise HTTPException(status_code=404, detail="Model not found")
 
+# handle prompt templates
+@app.get('/get_prompt_templates')
+async def get_prompt_templates():
+    prompt_templates_path = os.path.join('config', 'prompt_templates.ini')
+    templates_config = configparser.ConfigParser()
+
+    if not os.path.exists(prompt_templates_path):
+        return JSONResponse(content={})
+
+    with open(prompt_templates_path, 'r', encoding='utf-8') as file:
+        file_content = file.read()
+        # Ensure the content has a section header
+        if '[qa_prompt_templates]' not in file_content:
+            file_content = '[qa_prompt_templates]\n' + file_content
+
+    try:
+        templates_config.read_string(file_content)
+    except configparser.ParsingError as e:
+        print(f"Error parsing config: {e}")
+        raise HTTPException(status_code=500, detail="Error parsing prompt templates")
+
+    templates = {k: v.replace('\\n', '\n') for k, v in templates_config.items('qa_prompt_templates')}
+    return JSONResponse(content=templates)
+
+
+@app.post('/delete_prompt_template')
+async def delete_prompt_template(request: Request):
+    data = await request.json()
+    template_name = data.get('template_name')
+
+    prompt_templates_path = os.path.join('config', 'prompt_templates.ini')
+    templates_config = configparser.ConfigParser()
+    templates_config.read(prompt_templates_path)
+
+    if template_name in templates_config['qa_prompt_templates']:
+        templates_config.remove_option('qa_prompt_templates', template_name)
+        with open(prompt_templates_path, 'w', encoding='utf-8') as configfile:
+            templates_config.write(configfile)
+        return JSONResponse(content={"message": "Template deleted successfully!"})
+    else:
+        raise HTTPException(status_code=404, detail="Template not found")
+
+
+@app.post('/save_prompt_templates')
+async def save_prompt_templates(request: Request):
+    new_templates = await request.json()
+    prompt_templates_path = os.path.join('config', 'prompt_templates.ini')
+    templates_config = configparser.ConfigParser()
+    templates_config['qa_prompt_templates'] = {k: v.replace('\n', '\\n') for k, v in new_templates.items()}
+
+    with open(prompt_templates_path, 'w', encoding='utf-8') as configfile:
+        templates_config.write(configfile)
+    return JSONResponse(content={"message": "Templates saved successfully!"})
+
 #############################codegraph############################
 @app.get('/codegraph')
 async def codegraph_home(request: Request):
