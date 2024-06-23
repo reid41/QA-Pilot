@@ -15,9 +15,9 @@ from cachetools import cached, TTLCache
 from langchain.retrievers import ContextualCompressionRetriever
 from langchain.retrievers.document_compressors import FlashrankRerank
 
-
 # read from the config.ini
 config_path = os.path.join('config', 'config.ini')
+prompt_templates_path = 'config/prompt_templates.ini'
 config = configparser.ConfigParser()
 config.read(config_path)
 vectorstore_dir = config.get('the_project_dirs', 'vectorstore_dir')
@@ -29,7 +29,7 @@ chunk_overlap = config.get('chunk_setting', 'chunk_overlap')
 base_url = config.get('ollama_llm_models', 'base_url')
 encode_kwargs = {"normalize_embeddings": False}
 model_kwargs = {"device": "cuda:0"}  
-allowed_extensions = ['.py', '.md', '.log']
+allowed_extensions = ['.py', '.md', '.log', '.js', '.html']
 
 # remove the directories for the download/upload projects
 def remove_directory(dir_path):
@@ -67,6 +67,11 @@ def documents_to_string(documents):
     # Join all strings into a single large string
     return '\n\n'.join(doc_strings)
 
+
+def load_prompt_templates(path):
+    config = configparser.ConfigParser()
+    config.read(path)
+    return {section: dict(config.items(section)) for section in config.sections()}
 
 cache = TTLCache(maxsize=100, ttl=300)
 
@@ -191,11 +196,15 @@ class DataHandler:
         config.read(config_path)
         the_selected_provider = config.get('model_providers', 'selected_provider')
         chat_history = list(self.ChatQueue.queue)
-        qa_template = """I want you to act as a very senior code developer. 
-        and very familar with github/gitlab community,I will provide you the code project,
-        you need to provide answer which is basded on the project. 
-        {context}
-        """
+
+        try:
+            templates = load_prompt_templates(prompt_templates_path)
+            qa_template_name = config.get('prompt_templates', 'qa_selected_prompt')
+            qa_template = templates['qa_prompt_templates'][qa_template_name]
+        except Exception as e:
+            print(f"Error reading config or templates: {e}")
+            raise
+
         custom_prompt = ChatPromptTemplate.from_messages([
             SystemMessagePromptTemplate.from_template(qa_template), 
             HumanMessagePromptTemplate.from_template("{question}")])
@@ -258,16 +267,18 @@ class DataHandler:
         config = configparser.ConfigParser()
         config.read(config_path)
         the_selected_provider = config.get('model_providers', 'selected_provider')
-        # from datetime import datetime
-        code_template = """I want you to act as a Senior Python developer. 
-        I will provide you the code project, you provide detailed exaplanation. 
-        Human: {input}
-        History: {history}
-        AI:"""
-        code_template_localai = """I want you to act as a Senior Python developer. 
-        I will provide you the code project, you provide detailed exaplanation. 
-        Human: {input}
-        AI:"""
+
+        try:
+            templates = load_prompt_templates(prompt_templates_path)
+            code_template_name = config.get('prompt_templates', 'code_selected_prompt')
+            localai_template_name = config.get('prompt_templates', 'localai_selected_prompt')
+            
+            code_template = templates['qa_prompt_templates'][code_template_name]
+            code_template_localai = templates['qa_prompt_templates'][localai_template_name]
+        except Exception as e:
+            print(f"Error reading config or templates: {e}")
+            raise
+
         if the_selected_provider != 'localai':
             PROMPT = PromptTemplate(input_variables=["input", "history"], template=code_template)
             # print("-->", datetime.now())
