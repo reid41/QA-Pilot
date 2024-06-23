@@ -1,7 +1,7 @@
 <script>
     import { createEventDispatcher } from 'svelte';
     export let isOpen = false;
-    export let templateName = ''; // 显示模板名称
+    export let templateName = ''; 
     const dispatch = createEventDispatcher();
 
     function handleConfirm() {
@@ -34,16 +34,16 @@
     .modal h2 {
         margin-top: 0;
         margin-bottom: 10px;
-        font-size: 18px; /* 调整字体大小 */
+        font-size: 18px; 
     }
 
     .modal .template-name {
-        font-weight: bold; /* 加粗显示模板名称 */
-        color: #ff4757; /* 高亮显示为红色 */
+        font-weight: bold;
+        color: #ff4757;
     }
 
     .modal .warning {
-        color: yellow; /* 高亮显示警告为黄色 */
+        color: yellow; 
         margin-bottom: 10px;
     }
 
