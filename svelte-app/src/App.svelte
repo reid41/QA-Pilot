@@ -471,7 +471,7 @@
         <div class="submenu {showSettings ? 'visible' : ''}">
             <button on:click={toggleConfigEditor}>Edit QA-Pilot Settings</button>
             <button on:click={openApiKeyModal}>AI Vendor API Key</button>
-            <button on:click={openLlamaCppModelsModal}>llamacpp models</button>
+            <button on:click={openLlamaCppModelsModal}>Llamacpp models</button>
             <button on:click={openPromptTemplatesModal}>Prompt Templates</button>
         </div>
 
