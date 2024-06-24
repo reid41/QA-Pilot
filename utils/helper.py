@@ -29,7 +29,9 @@ chunk_overlap = config.get('chunk_setting', 'chunk_overlap')
 base_url = config.get('ollama_llm_models', 'base_url')
 encode_kwargs = {"normalize_embeddings": False}
 model_kwargs = {"device": "cuda:0"}  
-allowed_extensions = ['.py', '.md', '.log', '.js', '.html']
+allowed_extensions = ['.py', '.md', '.js',
+                    '.html', '.css', '.ts', '.sh',
+                    '.go', '.java', 'svelte']
 
 # remove the directories for the download/upload projects
 def remove_directory(dir_path):

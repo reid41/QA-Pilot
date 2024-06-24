@@ -159,5 +159,5 @@ python qa_pilot_run.py
 * Switch to `New Source Button` to add a new project
 * Use `rsd:` to start the input and get the source document
 * Use `rr:` to start the input and use the `FlashrankRerank` for the search
-* Click `Open Code Graph` in `QA-Pilot` to view the code(make sure the the already in the project session and loaded before click)
+* Click `Open Code Graph` in `QA-Pilot` to view the code(make sure the the already in the project session and loaded before click), curretly only support `python`
 

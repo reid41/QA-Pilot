@@ -102,6 +102,7 @@
         showDefaultMessage = false;
         await saveSessions();
         await loadRepo(gitUrl);
+        await updateCurrentSession(newSession);
     }
 
     async function switchSession(sessionId) {
