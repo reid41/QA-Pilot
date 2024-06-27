@@ -159,6 +159,7 @@
             <option value="zhipuai">ZhipuAI</option>
             <option value="anthropic">Anthropic</option>
             <option value="nvidia">Nvidia</option>
+            <option value="dashscope">Tongyi</option>
         </select>
         <input type="text" bind:value={apiKey} placeholder="Enter API Key" />
         {#if successMessage}
