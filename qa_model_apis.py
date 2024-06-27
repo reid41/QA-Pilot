@@ -13,6 +13,7 @@ from langchain_anthropic import ChatAnthropic
 import multiprocessing
 from langchain_community.chat_models import ChatLlamaCpp
 from langchain_nvidia_ai_endpoints import ChatNVIDIA
+from langchain_community.chat_models.tongyi import ChatTongyi
 
 # read from the config.ini
 config_path = os.path.join('config', 'config.ini')
@@ -75,6 +76,11 @@ def get_chat_model(provider, model_name=''):
         return ChatNVIDIA(
             model=model_name
         )
+    elif provider == 'tongyi':
+        load_dotenv()
+        return ChatTongyi(
+            model=model_name
+        ) 
     else:
         raise ValueError(f"Unsupported model provider: {provider}")
     
