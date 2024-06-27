@@ -12,6 +12,7 @@ from langchain_community.chat_models import ChatZhipuAI
 from langchain_anthropic import ChatAnthropic
 import multiprocessing
 from langchain_community.chat_models import ChatLlamaCpp
+from langchain_nvidia_ai_endpoints import ChatNVIDIA
 
 # read from the config.ini
 config_path = os.path.join('config', 'config.ini')
@@ -68,6 +69,11 @@ def get_chat_model(provider, model_name=''):
             repeat_penalty=1.5,
             top_p=0.5,
             verbose=True,
+        )
+    elif provider == 'nvidia':
+        load_dotenv()
+        return ChatNVIDIA(
+            model=model_name
         )
     else:
         raise ValueError(f"Unsupported model provider: {provider}")
