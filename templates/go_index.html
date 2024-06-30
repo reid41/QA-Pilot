@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Go CodeGPS</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.21.0/cytoscape.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dagre/0.8.5/dagre.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/cytoscape-dagre@2.5.0/cytoscape-dagre.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.1/styles/default.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.1/highlight.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        body {
+            display: flex;
+            margin: 0;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        #file-tree {
+            width: 25%;
+            border-right: 1px solid black;
+            padding-left: 10px;
+            overflow-y: auto;
+            background-color: #333;
+            color: white;
+            font-size: 17px;
+            font-family: Arial, sans-serif;
+        }
+
+        #cy-container {
+            width: 75%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        #cy {
+            width: 100%;
+            height: 90%;
+            border-left: 1px solid black;
+            overflow: auto;
+            position: absolute;
+            top: 5%;
+        }
+
+        #color-legend {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background-color: #fff;
+            border: 1px solid #ccc;
+            padding: 5px;
+            border-radius: 0 0 0 8px;
+            display: flex;
+            align-items: center;
+            z-index: 1000;
+            white-space: nowrap;
+        }
+
+        .legend-color-box {
+            display: inline-block;
+            width: 15px;
+            height: 15px;
+            margin: 0 10px;
+        }
+
+        #legend-list {
+            font-family: Arial, sans-serif;
+            display: flex;
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        .codeModal {
+            position: absolute;
+            width: 30%;
+            background-color: #fdf6e3;
+            border: 1px solid #d3d3d3;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            padding: 10px;
+            display: none;
+            overflow: auto;
+            z-index: 1000;
+            resize: both;
+            cursor: move;
+            border-radius: 8px;
+        }
+
+        .close-button {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            cursor: pointer;
+            font-size: 14px;
+            padding: 5px 10px;
+            background-color: #ff5c5c;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        .analyze-button {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            cursor: pointer;
+            font-size: 14px;
+            padding: 5px 10px;
+            background-color: #4caf50;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        .modal-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            background-color: #ffeb3b;
+            padding: 5px 10px;
+            border-radius: 5px;
+            display: inline-block;
+        }
+
+        pre {
+            margin: 0;
+            padding: 10px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            background-color: white;
+            border-radius: 8px;
+            font-family: 'Courier New', Courier, monospace;
+            color: #333;
+            max-height: 50vh;
+            overflow-y: auto;
+        }
+
+        code {
+            background-color: white !important;
+        }
+
+        ul {
+            list-style-type: none;
+            padding-left: 20px;
+        }
+
+        .directory {
+            font-weight: bold;
+            cursor: pointer;
+            color: white;
+        }
+
+        .file {
+            cursor: pointer;
+            color: white;
+        }
+
+        .directory .fa-folder {
+            color: #f9a825;
+        }
+
+        .file .fa-file {
+            color: #5E97F6;
+        }
+
+        .selected {
+            background-color: #555;
+        }
+
+        #zoom-buttons {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            z-index: 1000;
+        }
+
+        .zoom-button {
+            background-color: #333;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            font-size: 18px;
+            margin: 5px;
+            cursor: pointer;
+        }
+
+        .zoom-button:hover {
+            background-color: #555;
+        }
+    </style>
+</head>
+<body>
+    <div id="file-tree"></div>
+    <div id="cy-container">
+        <div id="cy"></div>
+        <div id="color-legend">
+            <ul id="legend-list"></ul>
+        </div>
+        <div id="zoom-buttons">
+            <button class="zoom-button" onclick="zoomIn()">+</button>
+            <button class="zoom-button" onclick="zoomOut()">-</button>
+        </div>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            fetchDirectory();
+            cytoscape.use(cytoscapeDagre);
+
+            window.cy = cytoscape({
+                container: document.getElementById('cy'),
+                style: [
+                    {
+                        selector: 'node',
+                        style: {
+                            'label': 'data(name)',
+                            'shape': 'roundrectangle',
+                            'text-valign': 'center',
+                            'text-halign': 'center',
+                            'width': 'label',
+                            'height': 'label',
+                            'padding': '10px',
+                            'color': 'white',
+                            'font-size': '14px',
+                            'font-family': 'Arial, sans-serif'
+                        }
+                    },
+                    {
+                        selector: 'node[class="struct"]',
+                        style: {
+                            'background-color': '#9370DB',
+                        }
+                    },
+                    {
+                        selector: 'node[class="function"]',
+                        style: {
+                            'background-color': '#34a853',
+                        }
+                    },
+                    {
+                        selector: 'node[class="method"]',
+                        style: {
+                            'background-color': '#FF69B4',
+                        }
+                    },
+                    {
+                        selector: 'node[class="import"]',
+                        style: {
+                            'background-color': '#ea4335',
+                        }
+                    },
+                    {
+                        selector: 'edge',
+                        style: {
+                            'width': 2,
+                            'line-color': '#FFD700',
+                            'target-arrow-color': '#FFD700',
+                            'target-arrow-shape': 'triangle',
+                            'curve-style': 'bezier'
+                        }
+                    },
+                    {
+                        selector: 'edge[category = "dashed"]',
+                        style: {
+                            'line-style': 'dashed',
+                            'line-color': 'data(color)',
+                            'target-arrow-color': 'data(color)',
+                            'target-arrow-shape': 'triangle'
+                        }
+                    }
+                ],
+                layout: {
+                    name: 'dagre',
+                    nodeSep: 100,
+                    rankSep: 150,
+                    rankDir: 'TB',
+                    animate: false
+                }
+            });
+
+            addLegend();
+        });
+
+        function addLegend() {
+            const legendItems = [
+                { color: '#9370DB', label: 'Struct' },
+                { color: '#34a853', label: 'Function' },
+                { color: '#FF69B4', label: 'Method' },
+                { color: '#ea4335', label: 'Import' },
+                { color: '#FFD700', label: 'Solid-Direct call' },
+                { color: 'gray', label: 'Dashed-Inherit' },
+                { color: 'green', label: 'Dashed-Call' },
+                { color: 'orange', label: 'Dashed-Import' }
+            ];
+
+            const legendList = document.getElementById('legend-list');
+            legendItems.forEach(item => {
+                const li = document.createElement('li');
+                const colorBox = document.createElement('span');
+                colorBox.style.backgroundColor = item.color;
+                colorBox.className = 'legend-color-box';
+                li.appendChild(colorBox);
+                li.appendChild(document.createTextNode(item.label));
+                legendList.appendChild(li);
+            });
+        }
+
+        function makeDraggable(modal) {
+            let isDragging = false;
+            let startX, startY, initialX, initialY;
+
+            modal.onmousedown = function(event) {
+                isDragging = true;
+                startX = event.clientX;
+                startY = event.clientY;
+                initialX = modal.offsetLeft;
+                initialY = modal.offsetTop;
+                document.addEventListener('mousemove', onMouseMove);
+                document.addEventListener('mouseup', onMouseUp);
+                modal.style.cursor = 'grabbing';
+            };
+
+            function onMouseMove(event) {
+                if (!isDragging) return;
+                let dx = event.clientX - startX;
+                let dy = event.clientY - startY;
+                modal.style.left = initialX + dx + 'px';
+                modal.style.top = initialY + dy + 'px';
+            }
+
+            function onMouseUp() {
+                isDragging = false;
+                document.removeEventListener('mousemove', onMouseMove);
+                document.removeEventListener('mouseup', onMouseUp);
+                modal.style.cursor = 'move';
+            }
+
+            modal.ondragstart = function() {
+                return false;
+            };
+        }
+
+        function createCodeModal(title, showAnalyzeButton = true) {
+            var modal = document.createElement('div');
+            modal.className = 'codeModal';
+            modal.innerHTML = '<span class="modal-title">' + title + '</span><button class="close-button" onclick="closeCodeModal(this)">✖</button>' + (showAnalyzeButton ? '<button class="analyze-button" onclick="analyzeCode(this)">🔍</button>' : '') + '<pre><code class="codeBlock"></code></pre>';
+            document.body.appendChild(modal);
+            makeDraggable(modal);
+            return modal;
+        }
+
+        function closeCodeModal(button) {
+            var modal = button.parentElement;
+            modal.style.display = 'none';
+        }
+
+        function analyzeCode(button) {
+            var modal = button.parentElement;
+            var codeBlock = modal.querySelector('.codeBlock').textContent;
+            fetch('/analyze', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ code: codeBlock })
+            })
+            .then(response => response.json())
+            .then(data => {
+                var analysisModal = createCodeModal("QA-Pilot", false);
+                var codeBlock = analysisModal.querySelector('.codeBlock');
+                codeBlock.textContent = data.analysis;
+                hljs.highlightElement(codeBlock);
+                document.body.appendChild(analysisModal);
+                analysisModal.style.display = 'block';
+                analysisModal.style.left = modal.style.left;
+                analysisModal.style.top = modal.style.top;
+            });
+        }
+
+        function showCodeModal(event) {
+            var target = event.target;
+            var targetData = target.data();
+
+            if (!targetData || !targetData.source) return;
+
+            var modal = target.codeModal || createCodeModal("Source Code");
+            target.codeModal = modal;
+
+            var codeBlock = modal.querySelector('.codeBlock');
+            codeBlock.textContent = targetData.source;
+            hljs.highlightElement(codeBlock);
+            modal.style.display = 'block';
+
+            var containerRect = document.getElementById('cy-container').getBoundingClientRect();
+            var modalRect = modal.getBoundingClientRect();
+            modal.style.left = (containerRect.width - modalRect.width) / 2 + 'px';
+            modal.style.top = (containerRect.height - modalRect.height) / 2 + 'px';
+            modal.style.maxHeight = '100vh';
+        }
+
+        function buildFileTree(fileTree, container) {
+            var ul = document.createElement('ul');
+            fileTree.forEach(function(item) {
+                var li = document.createElement('li');
+                if (item.type === 'directory') {
+                    li.className = 'directory';
+                    li.innerHTML = '<i class="fas fa-folder"></i> ' + item.name;
+                    var childrenContainer = document.createElement('div');
+                    childrenContainer.style.display = 'none';
+                    li.appendChild(childrenContainer);
+                    li.onclick = function(event) {
+                        event.stopPropagation();
+                        document.querySelectorAll('.selected').forEach(function(el) {
+                            el.classList.remove('selected');
+                        });
+                        li.classList.add('selected');
+                        childrenContainer.style.display = childrenContainer.style.display === 'none' ? 'block' : 'none';
+                    };
+                    buildFileTree(item.children, childrenContainer);
+                } else if (item.type === 'file') {
+                    li.className = 'file';
+                    li.innerHTML = '<i class="fas fa-file"></i> ' + item.name;
+                    li.dataset.path = item.path;
+                    li.onclick = function(event) {
+                        event.stopPropagation();
+                        document.querySelectorAll('.selected').forEach(function(el) {
+                            el.classList.remove('selected');
+                        });
+                        li.classList.add('selected');
+                        fetch('/go_data?filepath=' + encodeURIComponent(item.path))
+                            .then(response => response.json())
+                            .then(data => {
+                                const nodeIds = new Set();
+                                window.cy.elements().remove();
+                                data.nodeDataArray.forEach(node => {
+                                    nodeIds.add(node.key);
+                                    window.cy.add({
+                                        group: 'nodes',
+                                        data: {
+                                            id: node.key,
+                                            name: node.name,
+                                            class: node.class,
+                                            source: node.source
+                                        }
+                                    });
+                                });
+
+                                const addedEdges = new Set();
+                                data.linkDataArray.forEach(link => {
+                                    const edgeId = `${link.from}-${link.to}-${link.category}`;
+                                    if (nodeIds.has(link.from) && nodeIds.has(link.to) && !addedEdges.has(edgeId)) {
+                                        window.cy.add({
+                                            group: 'edges',
+                                            data: {
+                                                source: link.from,
+                                                target: link.to,
+                                                color: link.color,
+                                                category: link.category
+                                            }
+                                        });
+                                        addedEdges.add(edgeId);
+                                    } else if (!nodeIds.has(link.from) || !nodeIds.has(link.to)) {
+                                        console.warn(`Edge from ${link.from} to ${link.to} ignored because one or both nodes do not exist`);
+                                    } else {
+                                        console.warn(`Duplicate edge from ${link.from} to ${link.to} ignored`);
+                                    }
+                                });
+
+                                window.cy.nodes().on('click', showCodeModal);
+                                window.cy.layout({ name: 'dagre' }).run();
+                            });
+                    };
+                }
+                ul.appendChild(li);
+            });
+            container.appendChild(ul);
+        }
+
+        function fetchDirectory() {
+            fetch('/go_directory')
+                .then(response => response.json())
+                .then(data => {
+                    var container = document.getElementById('file-tree');
+                    buildFileTree(data, container);
+                });
+        }
+
+        function zoomIn() {
+            window.cy.zoom(window.cy.zoom() * 1.2);
+            window.cy.center();
+        }
+
+        function zoomOut() {
+            window.cy.zoom(window.cy.zoom() * 0.8);
+            window.cy.center();
+        }
+    </script>
+</body>
+</html>

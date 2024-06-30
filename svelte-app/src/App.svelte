@@ -32,6 +32,7 @@
     let showSettings = false; // control the Settings hide or show
     let showLlamaCppModelsModal = false;
     let showPromptTemplatesModal = false;
+    let showCodeGraphOptions = false;
 
     async function fetchConfig() {
         try {
@@ -265,8 +266,16 @@
         }
     }
 
-    function openCodeGraph() {
+    function toggleCodeGraphOptions() {
+        showCodeGraphOptions = !showCodeGraphOptions;
+    }
+
+    function openPythonCodeGraph() {
         window.open(`${API_BASE_URL}/codegraph`, '_blank');
+    }
+
+    function openGoCodeGraph() {
+        window.open(`${API_BASE_URL}/go_codegraph`, '_blank');
     }
 
     function confirmDeleteSession(sessionId) {
@@ -320,7 +329,6 @@
     function closePromptTemplatesModal() {
         showPromptTemplatesModal = false;
     }
-
 
     onMount(async () => {
         await loadSessions();
@@ -445,6 +453,16 @@
         background-color: rgba(0, 0, 0, 0.5);
         z-index: 999;
     }
+
+    .submenu-codegraph {
+        display: none;
+        flex-direction: column;
+        margin-left: 10px;
+    }
+
+    .submenu-codegraph.visible {
+        display: flex;
+    }
 </style>
 
 <div class="container">
@@ -463,7 +481,14 @@
             {/each}
         </select>
 
-        <button on:click={openCodeGraph}>Open Code Graph</button>
+        <button on:click={toggleCodeGraphOptions}>
+            Open Code Graph
+            <span class="arrow {showCodeGraphOptions ? 'rotate' : ''}">&#9654;</span>
+        </button>
+        <div class="submenu-codegraph {showCodeGraphOptions ? 'visible' : ''}">
+            <button on:click={openPythonCodeGraph}>Python Codegraph</button>
+            <button on:click={openGoCodeGraph}>Go Codegraph</button>
+        </div>
 
         <button on:click={toggleSettings}>
             Settings
