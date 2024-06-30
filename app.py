@@ -24,6 +24,11 @@ from utils.codegraph import (
     build_file_tree,
 )
 
+from utils.go_codegraph import(
+    parse_go_code,
+    go_build_file_tree,
+)
+
 app = FastAPI()
 
 app.add_middleware(
@@ -35,6 +40,7 @@ app.add_middleware(
 )
 
 config_path = os.path.join('config', 'config.ini')
+prompt_templates_path = os.path.join('config', 'prompt_templates.ini')
 config = configparser.ConfigParser()
 config.read(config_path)
 
@@ -457,7 +463,7 @@ async def save_prompt_templates(request: Request):
         templates_config.write(configfile)
     return JSONResponse(content={"message": "Templates saved successfully!"})
 
-#############################codegraph############################
+#############################python codegraph############################
 @app.get('/codegraph')
 async def codegraph_home(request: Request):
     return templates.TemplateResponse('index.html', {'request': request})
@@ -488,6 +494,26 @@ async def analyze(request: Request):
     code_analysis = data_handler.restrieval_qa_for_code(code)
     return JSONResponse(content={'analysis': code_analysis})
 
+#####go codegraph#####
+@app.get('/go_codegraph')
+async def go_codegraph_home(request: Request):
+    return templates.TemplateResponse('go_index.html', {'request': request})
+
+@app.get('/go_data')
+async def go_data(filepath: str):
+    if os.path.isdir(filepath):
+        raise HTTPException(status_code=400, detail="The specified path is a directory, not a file.")
+    code_data = parse_go_code(filepath)
+    return JSONResponse(content=code_data)
+
+@app.get('/go_directory')
+async def directory():
+    current_repo_path = read_current_repo_path(current_session)
+    if current_repo_path is None:
+        raise HTTPException(status_code=404, detail="Repository path not set or not found")
+    dir_tree = go_build_file_tree(current_repo_path)  # Ensure the path points to your code directory
+    return JSONResponse(content=dir_tree)
+
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=5000, log_level="debug")
+    uvicorn.run(app, host="0.0.0.0", port=5003, log_level="debug")

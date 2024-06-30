@@ -26,6 +26,8 @@ QA-Pilot is an interactive chat project that leverages online/local LLM for rapi
 
 ### Release
 
+* 2024-06-30  add `Go Codegraph`
+
 * 2024-06-27  add `nvidia/tongyi` API support
 
 * 2024-06-19  add `llamacpp` API support, improve the `settings` list in the sidebar and add upload model function for `llamacpp`, add `prompt templates` setting
@@ -72,7 +74,6 @@ conda create -n QA-Pilot python=3.10.14
 conda activate QA-Pilot
 ```
 
-
 3. Install the required dependencies:
 
 ```shell
@@ -80,7 +81,6 @@ pip install -r requirements.txt
 ```
 
 4. Install the pytorch with cuda [pytorch](https://pytorch.org/get-started/locally/)
-
 
 5. Setup providers
 
@@ -118,6 +118,14 @@ docker run -p 8080:8080 --name local-ai -ti localai/localai:latest-aio-cpu
   - ANTHROPIC_API_KEY='<anthropic_api_key>'
   - NVIDIA_API_KEY='<nvidia_api_key>'
   - DASHSCOPE_API_KEY='<tongyi_api_key>'
+
+* For `Go codegraph`, make sure setup [GO](https://go.dev/doc/install) env, compile go file and test
+```shell
+go build -o parser parser.go
+
+# test
+./parser /path/test.go
+```
 
 6. Set the related parameters in `config/config.ini`, e.g. `model provider`, `model`, `variable`, `Ollama API url` and setup the [Postgresql](https://www.postgresql.org/download/) env
 ```shell
@@ -165,5 +173,5 @@ python qa_pilot_run.py
 * Switch to `New Source Button` to add a new project
 * Use `rsd:` to start the input and get the source document
 * Use `rr:` to start the input and use the `FlashrankRerank` for the search
-* Click `Open Code Graph` in `QA-Pilot` to view the code(make sure the the already in the project session and loaded before click), curretly only support `python`
+* Click `Open Code Graph` in `QA-Pilot` to view the code(make sure the the already in the project session and loaded before click), curretly support `python` and `go`
 
