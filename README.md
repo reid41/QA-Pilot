@@ -13,7 +13,7 @@ QA-Pilot is an interactive chat project that leverages online/local LLM for rapi
 * Locate the session quicly with search function
 * Integrate with `codegraph` to view the python file
 * Support the different LLM models
-    * ollama
+    * ollama(llama3, gemma2)
     * openai
     * mistralai
     * localai
