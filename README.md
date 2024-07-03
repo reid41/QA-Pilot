@@ -22,9 +22,12 @@ QA-Pilot is an interactive chat project that leverages online/local LLM for rapi
     * llamacpp
     * nvidia
     * tongyi
+    * moonshot
 
 
 ### Release
+
+* 2024-07-03 update langchain to `0.2.6` version and add `moonshot` API support
 
 * 2024-06-30  add `Go Codegraph`
 
@@ -111,13 +114,14 @@ docker run -p 8080:8080 --name local-ai -ti localai/localai:latest-aio-cpu
   - upload the model to `llamacpp_models` dir or upload from the `llamacpp models` under the `Settings`
   - set the model in `llamacpp_llm_models` section in `config/config.ini`
 
-* For setup [OpenAI](https://platform.openai.com/docs/overview) or [MistralAI](https://docs.mistral.ai/) or [ZhipuAI](https://open.bigmodel.cn/) or [Anthropic](https://console.anthropic.com/settings/keys) or [Nvidia](https://build.nvidia.com/explore/discover) or [TongYi](https://help.aliyun.com/document_detail/611472.html?spm=a2c4g.2399481.0.0), add the key in `.env`
-  - OPENAI_API_KEY='<openai_api_key,>'
-  - MISTRAL_API_KEY='<mistralai_api_key>'
-  - ZHIPUAI_API_KEY='<zhipuai_api_key,>'
-  - ANTHROPIC_API_KEY='<anthropic_api_key>'
-  - NVIDIA_API_KEY='<nvidia_api_key>'
-  - DASHSCOPE_API_KEY='<tongyi_api_key>'
+* For setup API key in `.env`
+  - [OpenAI](https://platform.openai.com/docs/overview): OPENAI_API_KEY='<openai_api_key,>'
+  - [MistralAI](https://docs.mistral.ai/): MISTRAL_API_KEY='<mistralai_api_key>'
+  - [ZhipuAI](https://open.bigmodel.cn/): ZHIPUAI_API_KEY='<zhipuai_api_key,>'
+  - [Anthropic](https://console.anthropic.com/settings/keys): ANTHROPIC_API_KEY='<anthropic_api_key>'
+  - [Nvidia](https://build.nvidia.com/explore/discover): NVIDIA_API_KEY='<nvidia_api_key>'
+  - [TongYi](https://help.aliyun.com/document_detail/611472.html?spm=a2c4g.2399481.0.0): DASHSCOPE_API_KEY='<tongyi_api_key>'
+  - [Moonshot](https://platform.moonshot.cn/): MOONSHOT_API_KEY='<moonshot_api_key>'
 
 * For `Go codegraph`, make sure setup [GO](https://go.dev/doc/install) env, compile go file and test
 ```shell

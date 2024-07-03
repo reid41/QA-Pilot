@@ -14,6 +14,7 @@ import multiprocessing
 from langchain_community.chat_models import ChatLlamaCpp
 from langchain_nvidia_ai_endpoints import ChatNVIDIA
 from langchain_community.chat_models.tongyi import ChatTongyi
+from langchain_community.chat_models.moonshot import MoonshotChat
 
 # read from the config.ini
 config_path = os.path.join('config', 'config.ini')
@@ -79,6 +80,11 @@ def get_chat_model(provider, model_name=''):
     elif provider == 'tongyi':
         load_dotenv()
         return ChatTongyi(
+            model=model_name
+        ) 
+    elif provider == 'moonshot':
+        load_dotenv()
+        return MoonshotChat(
             model=model_name
         ) 
     else:
