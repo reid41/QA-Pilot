@@ -14,15 +14,15 @@ QA-Pilot is an interactive chat project that leverages online/local LLM for rapi
 * Integrate with `codegraph` to view the python file
 * Support the different LLM models
     * ollama(llama3, gemma2)
-    * openai
-    * mistralai
-    * localai
-    * zhipuai
-    * anthropic
+    * openai(gpt-4o, gpt-4-turbo, gpt-4, and gpt-3.5-turbo)
+    * mistralai(mistral-tiny, mistral-tiny, mistral-small-latest, mistral-medium-latest, mistral-large-latest, codestral-lates)
+    * localai(gpt-4, more)
+    * zhipuai(glm-4-0520, glm-4, glm-4-air, glm-4-airx,  glm-4-flash)
+    * anthropic(claude-3-opus-20240229, claude-3-sonnet-20240229, claude-3-haiku-20240307, claude-3-5-sonnet-20240620)
     * llamacpp
-    * nvidia
-    * tongyi
-    * moonshot
+    * nvidia(meta/llama3-70b-instruct, more)
+    * tongyi(qwen-turbo, qwen-plus, qwen-max, more)
+    * moonshot(moonshot-v1-8k, moonshot-v1-32k, moonshot-v1-128k)
 
 
 ### Release
