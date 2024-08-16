@@ -96,7 +96,8 @@ def get_embedding_model(eb_provider, model_name='', model_kwargs='', encode_kwar
         return HuggingFaceEmbeddings(
                 model_name=model_name,
                 model_kwargs=model_kwargs,
-                encode_kwargs=encode_kwargs
+                encode_kwargs=encode_kwargs,
+                cache_folder="./cache_embeddings/"
             )
      elif eb_provider == 'ollama':
          return OllamaEmbeddings(
