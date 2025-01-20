@@ -1,11 +1,17 @@
 import psycopg2
+import configparser
+
+config = configparser.ConfigParser()
+config.read('config/config.ini')
+db_config = config['database']
 
 try:
     conn = psycopg2.connect(
-        dbname="qa_pilot_chatsession_db",
-        user="qa_pilot_user",
-        password="qa_pilot_p",
-        host="<db host ip>"
+        dbname=db_config['db_name'],
+        user=db_config['db_user'],
+        password=db_config['db_password'],
+        host=db_config['db_host'],
+        port=db_config['db_port']
     )
     print("Connection successful")
     cur = conn.cursor()
