@@ -114,6 +114,19 @@
             }, 2000);
         }
     }
+
+    function formatMessage(text) {
+        if (!text) return { normal: "", think: "" };
+
+        // Extract content inside <think> tags
+        const thinkMatches = [...text.matchAll(/<think>(.*?)<\/think>/gs)];
+        const thinkText = thinkMatches.map(match => match[1]).join(" ");
+
+        // Remove <think> content to get the normal text
+        const normalText = text.replace(/<think>.*?<\/think>/gs, "");
+
+        return { normal: normalText, think: thinkText };
+    }
 </script>
 
 <style>
@@ -238,6 +251,12 @@
     .upload-button:hover {
         color: #ccc;
     }
+
+    .think-text {
+        font-size: 0.85em;
+        font-style: italic;
+        color: #ccc;
+    }
 </style>
 
 <div class="chat-container">
@@ -250,7 +269,13 @@
                     <div>Thinking...</div>
                 {:else}
                     <div class="sender">{message.sender}</div>
-                    <div>{@html marked(message.text || '')}</div>
+                    {#if formatMessage(message.text).think}
+                        <div class="think-text">{@html marked(formatMessage(message.text).think)}</div>
+                    {/if}
+
+                    {#if formatMessage(message.text).normal}
+                        <div>{@html marked(formatMessage(message.text).normal)}</div>
+                    {/if}
                     {#if message.sender !== 'You'}
                         <div class="copy-button-container">
                             <button class="copy-button" on:click={(event) => handleCopyClick(event, message)}>Copy</button>
