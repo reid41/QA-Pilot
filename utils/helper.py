@@ -31,7 +31,7 @@ encode_kwargs = {"normalize_embeddings": False}
 model_kwargs = {"device": "cuda:0"}  
 allowed_extensions = ['.py', '.md', '.js',
                     '.html', '.css', '.ts', '.sh',
-                    '.go', '.java', 'svelte']
+                    '.go', '.java', '.svelte']
 
 # remove the directories for the download/upload projects
 def remove_directory(dir_path):
