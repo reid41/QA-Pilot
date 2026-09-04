@@ -23,6 +23,7 @@ QA-Pilot is an interactive chat project that leverages online/local LLM for rapi
     * nvidia(meta/llama3-70b-instruct, more)
     * tongyi(qwen-turbo, qwen-plus, qwen-max, more)
     * moonshot(moonshot-v1-8k, moonshot-v1-32k, moonshot-v1-128k)
+    * llmman(gemma4, qwen3.8, hf.co/unsloth/Qwen3.5-0.8B-GGUF, more)
 
 
 ### Release
@@ -94,6 +95,17 @@ e.g.
 ollama pull <model_name>
 
 ollama list
+```
+
+* For setup [llmman](https://github.com/llmmanorg/llmman), a local model runner that serves the Ollama API on port `17434`, set the llmman `base_url` in config/config.ini if it is not the default `http://localhost:17434`.
+e.g.
+
+```shell
+curl -fsSL https://raw.githubusercontent.com/llmmanorg/llmman/main/install.sh | sh
+
+llmman serve
+
+llmman pull gemma4
 ```
 
 * For setup [localAI](https://localai.io/) and [LocalAI github](https://github.com/mudler/LocalAI) to manage the local LLM, set the localAI `base_url` in config/config.ini.
