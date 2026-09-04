@@ -21,14 +21,16 @@ config_path = os.path.join('config', 'config.ini')
 config = configparser.ConfigParser()
 config.read(config_path)
 ollama_base_url = config.get('ollama_llm_models', 'base_url')
+# llmman (https://github.com/llmmanorg/llmman) serves the Ollama API on port 17434
+llmman_base_url = config.get('llmman_llm_models', 'base_url')
 localai_base_url = config.get('localai_llm_models', 'base_url')
 
 
 # get the chat model from config
 def get_chat_model(provider, model_name=''):    
-    if provider == 'ollama':
+    if provider in ('ollama', 'llmman'):
         return ChatOllama(
-            base_url=ollama_base_url,
+            base_url=llmman_base_url if provider == 'llmman' else ollama_base_url,
             model=model_name,
             streaming=True,
             callbacks=[StreamingStdOutCallbackHandler()]
