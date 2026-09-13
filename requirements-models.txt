@@ -1,0 +1,13 @@
+# Optional providers: install only the package for the provider you use.
+# python -m pip install langchain-openai  (for example)
+langchain-openai
+langchain-anthropic
+langchain-mistralai
+langchain-nvidia-ai-endpoints
+langchain-huggingface
+sentence-transformers
+llama-index-llms-openai-like
+llama-cpp-python
+dashscope
+zhipuai
+FlashRank

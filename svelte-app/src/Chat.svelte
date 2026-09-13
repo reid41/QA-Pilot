@@ -50,10 +50,13 @@
                 messages = [...messages, { sender: 'QA-Pilot', text: data.response }];
                 await saveMessages();
             } else {
-                throw new Error('Failed to send message');
+                const data = await response.json().catch(() => ({}));
+                throw new Error(data.detail || 'Failed to send message');
             }
         } catch (error) {
             console.error('Error sending message:', error);
+            messages = messages.filter(message => message.sender !== 'loader');
+            messages = [...messages, { sender: 'QA-Pilot', text: `Request failed: ${error.message}` }];
         } finally {
             isLoading = false;
         }

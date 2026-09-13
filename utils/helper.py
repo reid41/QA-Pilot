@@ -1,22 +1,22 @@
 from langchain_community.document_loaders import TextLoader
-from langchain.text_splitter import CharacterTextSplitter
-from langchain_community.vectorstores import Chroma
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_chroma import Chroma
 import git
 import os
 from queue import Queue
 import shutil
 from urllib.parse import urlparse
 import configparser
-from langchain.chains import ConversationalRetrievalChain
+from langchain_classic.chains import ConversationalRetrievalChain
 from langchain_core.prompts.prompt import PromptTemplate
 from langchain_core.prompts import ChatPromptTemplate, SystemMessagePromptTemplate, HumanMessagePromptTemplate
-from langchain.chains import ConversationChain
+from langchain_classic.chains import ConversationChain
 from cachetools import cached, TTLCache
-from langchain.retrievers import ContextualCompressionRetriever
-from langchain.retrievers.document_compressors import FlashrankRerank
 
 # read from the config.ini
-config_path = os.path.join('config', 'config.ini')
+from utils.runtime_config import get_config_path
+
+config_path = get_config_path()
 prompt_templates_path = 'config/prompt_templates.ini'
 config = configparser.ConfigParser()
 config.read(config_path)
@@ -28,7 +28,7 @@ chunk_size = config.get('chunk_setting', 'chunk_size')
 chunk_overlap = config.get('chunk_setting', 'chunk_overlap')
 base_url = config.get('ollama_llm_models', 'base_url')
 encode_kwargs = {"normalize_embeddings": False}
-model_kwargs = {"device": "cuda:0"}  
+model_kwargs = {"device": os.getenv("QA_PILOT_EMBEDDING_DEVICE", "cpu")}
 allowed_extensions = ['.py', '.md', '.js',
                     '.html', '.css', '.ts', '.sh',
                     '.go', '.java', '.svelte']
@@ -119,7 +119,7 @@ class DataHandler:
                     git.Repo.clone_from(self.git_url, self.download_path)
                     print("Repository cloned successfully.")
                 except Exception as e:
-                    print(f"Failed to clone repository. Error: {e}")
+                    raise RuntimeError(f"Failed to clone repository: {e}") from e
 
     # load the projects
     def load_files(self, root_dir=None, current_depth=0, base_depth=0):
@@ -131,13 +131,17 @@ class DataHandler:
         
         # github projects
         if "UploadedRepo" not in self.git_url:
-            for dirpath, _, filenames in os.walk(root_dir):
+            for dirpath, dirs, filenames in os.walk(root_dir):
+                dirs[:] = [d for d in dirs if d not in {
+                    '.git', '.venv', 'venv', 'node_modules', '__pycache__',
+                    'VectorStore', 'cache_embeddings',
+                }]
                 for filename in filenames:
                     if any(filename.endswith(ext) for ext in allowed_extensions):
                         file_path = os.path.join(dirpath, filename)
                         try:
                             loader = TextLoader(file_path, encoding='utf-8')
-                            self.docs.extend(loader.load_and_split())
+                            self.docs.extend(loader.load())
                         except Exception as e:
                             print(f"Error loading file {file_path}: {e}")
         else:
@@ -162,7 +166,7 @@ class DataHandler:
 
     # split all the files
     def split_files(self):
-        text_splitter = CharacterTextSplitter(chunk_size=int(chunk_size), chunk_overlap=int(chunk_overlap))
+        text_splitter = RecursiveCharacterTextSplitter(chunk_size=int(chunk_size), chunk_overlap=int(chunk_overlap))
         self.texts = text_splitter.split_documents(self.docs)
 
     # store the all file chunk into chromadb
@@ -171,7 +175,6 @@ class DataHandler:
             os.makedirs(self.db_dir)
         print("eb:", self.embedding_model)
         db = Chroma.from_documents(self.texts, self.embedding_model, persist_directory=self.db_dir) 
-        db.persist()  
         return db  
         
     # load 
@@ -214,6 +217,8 @@ class DataHandler:
         if the_selected_provider != 'localai':
             # add reranker
             if rr:
+                from langchain_classic.retrievers import ContextualCompressionRetriever
+                from langchain_classic.retrievers.document_compressors import FlashrankRerank
                 compressor = FlashrankRerank()
                 compression_retriever = ContextualCompressionRetriever(
                     base_compressor=compressor, base_retriever=self.retriever
@@ -231,12 +236,12 @@ class DataHandler:
                 return_source_documents=True,
                 combine_docs_chain_kwargs={"prompt": custom_prompt})
             
-            result = qa({"question": query, "chat_history": chat_history})
+            result = qa.invoke({"question": query, "chat_history": chat_history})
 
             self.update_chat_queue((query, result["answer"]))
 
             # add the search source documents
-            docs_strings = document_to_string(result['source_documents'][0])
+            docs_strings = documents_to_string(result['source_documents'])
             # docs_strings = documents_to_string(result['source_documents'])
 
             if rsd:
@@ -245,7 +250,7 @@ class DataHandler:
                 return result['answer']
             
         elif the_selected_provider == 'localai':
-            docs = self.retriever.get_relevant_documents(query)
+            docs = self.retriever.invoke(query)
 
             ds2s = documents_to_string(docs)
 

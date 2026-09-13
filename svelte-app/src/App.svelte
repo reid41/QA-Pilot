@@ -96,7 +96,8 @@
     async function createNewSession(gitUrl) {
         let repoName = gitUrl.split('/').pop().replace('.git', '');
         let newSession = { id: Date.now(), name: repoName, url: gitUrl, messages: [{ sender: 'QA-Pilot', text: `url:${gitUrl}` }, { sender: 'loader', text: 'Thinking...' }] };
-        sessions.push(newSession);
+        sessions = [...sessions, newSession];
+        filterSessions();
         currentSessionIndex = sessions.length - 1;
         currentRepo = gitUrl;
         messages = newSession.messages;
@@ -175,10 +176,14 @@
                 messages = currentMessages;
                 await saveSessions();
             } else {
-                throw new Error('Failed to load repository');
+                const data = await response.json().catch(() => ({}));
+                throw new Error(data.detail || 'Failed to load repository');
             }
         } catch (error) {
             console.error('Error loading repository:', error);
+            messages = messages.filter(message => message.sender !== 'loader');
+            messages = [...messages, { sender: 'QA-Pilot', text: `Repository loading failed: ${error.message}` }];
+            sessions[currentSessionIndex].messages = messages;
         }
     }
 

@@ -1,8 +1,9 @@
 import psycopg2
 import configparser
+from utils.runtime_config import get_config_path
 
 config = configparser.ConfigParser()
-config.read('config/config.ini')
+config.read(get_config_path())
 db_config = config['database']
 
 try:

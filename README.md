@@ -4,6 +4,11 @@
 
 QA-Pilot is an interactive chat project that leverages online/local LLM for rapid understanding and navigation of GitHub code repository.
 
+**Updated runtime setup:** See [the deployment guide](deploy/README.md) for the
+tested Python 3.13 / LangChain 1.x environment, pinned dependencies, Ollama setup,
+and systemd service. The older installation instructions below describe the
+original environment; installing every historical model SDK is no longer required.
+
 ### Features
 
 * Chat with github public repository with git clone way
@@ -97,7 +102,7 @@ ollama pull <model_name>
 ollama list
 ```
 
-* For setup [llmman](https://github.com/llmmanorg/llmman), a local model runner that serves the Ollama API on port `17434`, set the llmman `base_url` in config/config.ini if it is not the default `http://localhost:17434`.
+* For setup [llmman](https://github.com/llmmanorg/llmman), a local model runner that serves the Ollama API on port `17434`, set the llmman `base_url` in config/config.local.ini if it is not the default `http://localhost:17434`.
 e.g.
 
 ```shell
@@ -108,7 +113,7 @@ llmman serve
 llmman pull gemma4
 ```
 
-* For setup [localAI](https://localai.io/) and [LocalAI github](https://github.com/mudler/LocalAI) to manage the local LLM, set the localAI `base_url` in config/config.ini.
+* For setup [localAI](https://localai.io/) and [LocalAI github](https://github.com/mudler/LocalAI) to manage the local LLM, set the localAI `base_url` in config/config.local.ini.
 e.g.
 ```shell
 docker run -p 8080:8080 --name local-ai -ti localai/localai:latest-aio-cpu
@@ -124,7 +129,7 @@ docker run -p 8080:8080 --name local-ai -ti localai/localai:latest-aio-cpu
 
 * For setup llamacpp with [llama-cpp-python](https://github.com/abetlen/llama-cpp-python#windows-remarks)
   - upload the model to `llamacpp_models` dir or upload from the `llamacpp models` under the `Settings`
-  - set the model in `llamacpp_llm_models` section in `config/config.ini`
+  - set the model in `llamacpp_llm_models` section in `config/config.local.ini`
 
 * For setup API key in `.env`
   - [OpenAI](https://platform.openai.com/docs/overview): OPENAI_API_KEY='<openai_api_key,>'
@@ -143,7 +148,7 @@ go build -o parser parser.go
 ./parser /path/test.go
 ```
 
-6. Set the related parameters in `config/config.ini`, e.g. `model provider`, `model`, `variable`, `Ollama API url` and setup the [Postgresql](https://www.postgresql.org/download/) env
+6. Copy `config/config.ini` to `config/config.local.ini` (ignored by Git). Set the related parameters in `config/config.local.ini`, e.g. `model provider`, `model`, `variable`, `Ollama API url` and setup the [Postgresql](https://www.postgresql.org/download/) env
 ```shell
 # create the db, e.g.
 CREATE DATABASE qa_pilot_chatsession_db;
@@ -151,7 +156,7 @@ CREATE USER qa_pilot_user WITH ENCRYPTED PASSWORD 'qa_pilot_p';
 GRANT ALL PRIVILEGES ON DATABASE qa_pilot_chatsession_db TO qa_pilot_user;
 
 # set the connection
-cat config/config.ini
+cat config/config.local.ini
 [database]
 db_name = qa_pilot_chatsession_db
 db_user = qa_pilot_user
@@ -190,4 +195,3 @@ python qa_pilot_run.py
 * Use `rsd:` to start the input and get the source document
 * Use `rr:` to start the input and use the `FlashrankRerank` for the search
 * Click `Open Code Graph` in `QA-Pilot` to view the code(make sure the the already in the project session and loaded before click), curretly support `python` and `go`
-

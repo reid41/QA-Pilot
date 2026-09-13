@@ -1,0 +1,22 @@
+[Unit]
+Description=QA-Pilot repository chat
+After=network-online.target postgresql.service
+Wants=network-online.target
+Requires=postgresql.service
+
+[Service]
+Type=simple
+# Replace the example account and paths before installing this template.
+User=qa-pilot
+Group=qa-pilot
+WorkingDirectory=/opt/QA-Pilot
+Environment=PYTHONUNBUFFERED=1
+Environment=ANONYMIZED_TELEMETRY=False
+Environment=TOKENIZERS_PARALLELISM=false
+ExecStart=/opt/QA-Pilot/.venv/bin/uvicorn app:app --host 0.0.0.0 --port 5000
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=30
+
+[Install]
+WantedBy=multi-user.target

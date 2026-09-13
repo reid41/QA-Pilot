@@ -2,6 +2,8 @@ from fastapi import FastAPI, Request, HTTPException, UploadFile, File, Form
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.templating import Jinja2Templates
+from fastapi.staticfiles import StaticFiles
+from starlette.concurrency import run_in_threadpool
 import configparser
 import os
 from dotenv import load_dotenv, set_key
@@ -39,7 +41,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-config_path = os.path.join('config', 'config.ini')
+from utils.runtime_config import get_config_path
+
+config_path = get_config_path()
 prompt_templates_path = os.path.join('config', 'prompt_templates.ini')
 config = configparser.ConfigParser()
 config.read(config_path)
@@ -182,13 +186,13 @@ async def load_repo(request: Request):
     if not git_url:
         raise HTTPException(status_code=400, detail="Git URL is required")
 
-    load_models_if_needed()
+    await run_in_threadpool(load_models_if_needed)
     chat_model = current_model_info["chat_model"]
     embedding_model = current_model_info["embedding_model"]
     data_handler = DataHandler(git_url, chat_model, embedding_model)
     try:
-        data_handler.git_clone_repo()
-        data_handler.load_into_db()
+        await run_in_threadpool(data_handler.git_clone_repo)
+        await run_in_threadpool(data_handler.load_into_db)
         return JSONResponse(content={"message": f"Repository {git_url} loaded successfully!"})
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -196,7 +200,7 @@ async def load_repo(request: Request):
 @app.post('/chat')
 async def chat(request: Request):
     data = await request.json()
-    load_models_if_needed()
+    await run_in_threadpool(load_models_if_needed)
     chat_model = current_model_info["chat_model"]
     embedding_model = current_model_info["embedding_model"]
 
@@ -208,7 +212,7 @@ async def chat(request: Request):
 
     try:
         data_handler = DataHandler(current_repo, chat_model, embedding_model)
-        data_handler.load_into_db()
+        await run_in_threadpool(data_handler.load_into_db)
         rsd = False
         rr = False
 
@@ -220,7 +224,7 @@ async def chat(request: Request):
         elif user_message.startswith('rr:'):
             user_message = user_message[3:].strip()
             rr = True
-        bot_response = data_handler.retrieval_qa(user_message, rsd=rsd, rr=rr)
+        bot_response = await run_in_threadpool(data_handler.retrieval_qa, user_message, rsd=rsd, rr=rr)
 
         # Save user message and bot response to the session table
         conn = psycopg2.connect(
@@ -466,7 +470,7 @@ async def save_prompt_templates(request: Request):
 #############################python codegraph############################
 @app.get('/codegraph')
 async def codegraph_home(request: Request):
-    return templates.TemplateResponse('index.html', {'request': request})
+    return templates.TemplateResponse(request=request, name='index.html')
 
 
 @app.get('/data')
@@ -485,19 +489,19 @@ async def directory():
 @app.post('/analyze')
 async def analyze(request: Request):
     data = await request.json()
-    load_models_if_needed()
+    await run_in_threadpool(load_models_if_needed)
     chat_model = current_model_info["chat_model"]
     embedding_model = current_model_info["embedding_model"]
     code = data.get('code', '')
     # send the code to LLM
     data_handler = DataHandler(git_url='', chat_model=chat_model, embedding_model=embedding_model)
-    code_analysis = data_handler.restrieval_qa_for_code(code)
+    code_analysis = await run_in_threadpool(data_handler.restrieval_qa_for_code, code)
     return JSONResponse(content={'analysis': code_analysis})
 
 #####go codegraph#####
 @app.get('/go_codegraph')
 async def go_codegraph_home(request: Request):
-    return templates.TemplateResponse('go_index.html', {'request': request})
+    return templates.TemplateResponse(request=request, name='go_index.html')
 
 @app.get('/go_data')
 async def go_data(filepath: str):
@@ -513,6 +517,15 @@ async def directory():
         raise HTTPException(status_code=404, detail="Repository path not set or not found")
     dir_tree = go_build_file_tree(current_repo_path)  # Ensure the path points to your code directory
     return JSONResponse(content=dir_tree)
+
+@app.get('/healthz')
+def healthz():
+    return {"status": "ok"}
+
+
+# Register after API routes so the built frontend can share their origin.
+app.mount('/', StaticFiles(directory='svelte-app/public', html=True), name='frontend')
+
 
 if __name__ == "__main__":
     import uvicorn
