@@ -6,6 +6,11 @@ from fastapi.staticfiles import StaticFiles
 from starlette.concurrency import run_in_threadpool
 import configparser
 import os
+import secrets
+import shutil
+import uuid
+from pathlib import Path
+from utils.local_sources import MAX_FILES, save_directory, upload_storage_key
 from dotenv import load_dotenv, set_key
 from utils.helper import (
     DataHandler,
@@ -197,6 +202,56 @@ async def load_repo(request: Request):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.post('/upload_repo')
+async def upload_repo(request: Request):
+    source = f'upload://{uuid.uuid4().hex}'
+    key = upload_storage_key(source)
+    project_path = Path(config['the_project_dirs']['project_dir']) / key
+    index_path = Path(config['the_project_dirs']['vectorstore_dir']) / key
+    completed = False
+    try:
+        async with request.form(max_files=MAX_FILES, max_fields=10) as form:
+            files = form.getlist('files')
+            if any(not hasattr(file, 'read') for file in files):
+                raise HTTPException(400, 'Expected directory files.')
+            name, file_count = await save_directory(files, project_path)
+        await run_in_threadpool(load_models_if_needed)
+        handler = DataHandler(source, current_model_info['chat_model'],
+                              current_model_info['embedding_model'])
+        await run_in_threadpool(handler.load_into_db)
+        session = {'id': secrets.randbelow(2**53 - 1) + 1, 'name': name, 'url': source}
+        message = f'Local directory {name} loaded successfully! Indexed {file_count} source files.'
+        await run_in_threadpool(persist_uploaded_session, session, message)
+        completed = True
+        return {**session, 'file_count': file_count,
+                'messages': [{'sender': 'QA-Pilot', 'text': message}]}
+    except HTTPException:
+        raise
+    except Exception as exc:
+        print(f'Directory upload failed: {exc}')
+        raise HTTPException(500, 'Could not index the directory. Check the embedding model connection and retry.') from exc
+    finally:
+        if not completed:
+            await run_in_threadpool(shutil.rmtree, project_path, ignore_errors=True)
+            await run_in_threadpool(shutil.rmtree, index_path, ignore_errors=True)
+
+
+def persist_uploaded_session(session, message):
+    conn = psycopg2.connect(dbname=DB_NAME, user=DB_USER, password=DB_PASSWORD,
+                            host=DB_HOST, port=DB_PORT)
+    try:
+        with conn:
+            with conn.cursor() as cursor:
+                cursor.execute('INSERT INTO sessions (id, name, url) VALUES (%s, %s, %s)',
+                               (session['id'], session['name'], session['url']))
+                table = sql.Identifier(f"session_{session['id']}")
+                cursor.execute(sql.SQL('CREATE TABLE {} (id BIGSERIAL PRIMARY KEY, sender TEXT NOT NULL, text TEXT NOT NULL)').format(table))
+                cursor.execute(sql.SQL('INSERT INTO {} (sender, text) VALUES (%s, %s)').format(table),
+                               ('QA-Pilot', message))
+    finally:
+        conn.close()
+
+
 @app.post('/chat')
 async def chat(request: Request):
     data = await request.json()
@@ -319,7 +374,7 @@ async def delete_session(session_id: int):
     cursor = conn.cursor()
 
     try:
-        cursor.execute('SELECT name FROM sessions WHERE id = %s', (session_id,))
+        cursor.execute('SELECT name, url FROM sessions WHERE id = %s', (session_id,))
         session = cursor.fetchone()
         if session:
             session_name = session[0]
@@ -329,8 +384,12 @@ async def delete_session(session_id: int):
         cursor.execute(sql.SQL('DROP TABLE IF EXISTS {}').format(sql.Identifier(f'session_{session_id}')))
         conn.commit()
         # remove the git clone project
-        remove_project_path = os.path.join("projects", session_name)
+        upload_key = upload_storage_key(session[1]) if session else None
+        remove_project_path = (os.path.join(config['the_project_dirs']['project_dir'], upload_key)
+                               if upload_key else os.path.join("projects", session_name))
         remove_directory(remove_project_path)
+        if upload_key:
+            remove_directory(os.path.join(config['the_project_dirs']['vectorstore_dir'], upload_key))
         print("Session deleted successfully")
         return JSONResponse(content={"message": "Session deleted successfully!"})
     except Exception as e:

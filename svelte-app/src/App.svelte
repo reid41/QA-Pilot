@@ -157,6 +157,22 @@
         }
     }
 
+    async function uploadDirectory(files) {
+        const body = new FormData();
+        for (const file of files) body.append('files', file, file.webkitRelativePath);
+        const response = await fetch(`${API_BASE_URL}/upload_repo`, { method: 'POST', body });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.detail || 'Directory upload failed. Please retry.');
+        sessions = [...sessions, data];
+        filterSessions();
+        currentSessionIndex = sessions.length - 1;
+        currentRepo = data.url;
+        messages = data.messages;
+        showDefaultMessage = false;
+        await updateCurrentSession(data);
+        closeNewSourceModal();
+    }
+
     async function loadRepo(gitUrl) {
         try {
             const response = await fetch(`${API_BASE_URL}/load_repo`, {
@@ -527,7 +543,7 @@
             <div style="color: white; font-size: 23px; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%;">
                 <img src="/qa-pilot1.png" alt="Placeholder Image" style="width: 200px; height: auto; margin-bottom: 20px;">
                 <p>1. Please check your config with "Edit QA-Pilot Settings" button.</p>
-                <p>2. Click "New Source Button" to input the github URL.</p>
+                <p>2. Click "New Source Button" to enter a GitHub URL or upload a local folder.</p>
             </div>
         {/if}
     </div>
@@ -544,6 +560,7 @@
 {#if showNewSourceModal}
     <NewSourceModal
         isOpen={showNewSourceModal}
+        {uploadDirectory}
         on:confirm={handleNewSource}
         on:cancel={closeNewSourceModal} />
 {/if}

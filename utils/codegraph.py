@@ -1,5 +1,8 @@
 import ast 
 import os
+import configparser
+from utils.local_sources import upload_storage_key
+from utils.runtime_config import get_config_path
 
 def parse_python_code(filepath):
     """Parse Python code file, extract classes, methods, global functions, imported modules and their source code, and the call relationships."""
@@ -110,6 +113,11 @@ def parse_python_code(filepath):
 
 def read_current_repo_path(current_session):
     if current_session:
+        key = upload_storage_key(current_session.get('url', ''))
+        if key:
+            config = configparser.ConfigParser()
+            config.read(get_config_path())
+            return os.path.join(config['the_project_dirs']['project_dir'], key)
         print("=============> path: ", os.path.join("projects", current_session['name']))
         return os.path.join("projects", current_session['name'])
     return None

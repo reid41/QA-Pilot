@@ -11,6 +11,18 @@ original environment; installing every historical model SDK is no longer require
 
 ### Features
 
+* Upload a local source directory: click **New Source Button**, then **Upload**
+  next to **Confirm** and select a folder on your computer. Files are uploaded to
+  the QA-Pilot server and indexed without Git cloning. **Confirm** still loads
+  the GitHub URL entered in the same dialog.
+  Supported files: `.py`, `.md`, `.js`, `.html`, `.css`, `.ts`, `.sh`, `.go`,
+  `.java`, `.svelte` (non-empty UTF-8 text). Dependency/cache directories such as
+  `.git`, `.venv` and `node_modules` are skipped. Limits: 2,000 source files,
+  10 MiB per file and 50 MiB total. Each upload creates an independent snapshot
+  and session; local changes require a new upload. Uploaded sources support
+  chat and the existing Python/Go codegraphs.
+
+
 * Chat with github public repository with git clone way
 * Store the chat history 
 * Easy to set the configuration

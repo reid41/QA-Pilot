@@ -12,6 +12,7 @@ from langchain_core.prompts.prompt import PromptTemplate
 from langchain_core.prompts import ChatPromptTemplate, SystemMessagePromptTemplate, HumanMessagePromptTemplate
 from langchain_classic.chains import ConversationChain
 from cachetools import cached, TTLCache
+from utils.local_sources import upload_storage_key
 
 # read from the config.ini
 from utils.runtime_config import get_config_path
@@ -82,6 +83,7 @@ class DataHandler:
         self.git_url = git_url
         last_part = git_url.split('/')[-1]
         self.repo_name = last_part.rsplit('.', 1)[0]
+        self.repo_name = upload_storage_key(git_url) or self.repo_name
         # create the store db and project dir
         if not os.path.exists(vectorstore_dir):
             os.makedirs(vectorstore_dir)
